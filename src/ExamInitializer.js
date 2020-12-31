@@ -26,7 +26,8 @@ async function extractInfoFromSessionCsv(filePath) {
     })
 }
 
-async function uploadSessionToDb() {
+async function uploadSessionToDb(details) {
+  const {sessionId, invilAccs, stuAccs} = details;
   
 }
 
