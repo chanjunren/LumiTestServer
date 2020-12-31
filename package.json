@@ -19,5 +19,9 @@
   "homepage": "https://github.com/chanjunren/LumiTestServer#readme",
   "devDependencies": {
     "electron": "^11.1.1"
+  },
+  "dependencies": {
+    "csvtojson": "^2.0.10",
+    "express": "^4.17.1"
   }
 }
