@@ -1,0 +1,4 @@
+.,TEST_ALIAS,SESSION_ID,STU_ID,STU_PW,INVIL_ID,INVIL_PW
+,,1,student1,pw,invil1,pw
+,,,student2,pw,invil2,pw
+,,,student3,pw,invil3,pw
