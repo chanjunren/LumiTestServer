@@ -1,10 +1,10 @@
 const {connectToDb, testQnBucket} = require('../../../globals/db_globals.js');
-const {testDetails, sessionDetails} = require('../../../globals/db_schemas.js');
+const {testDetails} = require('../../../globals/db_schemas.js');
 const fs = require('fs'); // For creating read and write streams
 const mongoose = require('mongoose');
 const connection = mongoose.connection;
 
-openConnectionToDb("hiitsjr");
+connectToDb("hiitsjr");
 
 connection.once('connected', async function() {
     /*const masterList = await getMasterList();
@@ -25,10 +25,6 @@ connection.once('connected', async function() {
     /*  const sessionDetails = await getSessionDetails(10); // Returns empty
     console.log(sessionDetails);*/
 })
-
-function openConnectionToDb(testAlias) {
-    connectToDb(testAlias);
-}
 
 async function postNewTestToDb(testAlias, testPw, qnFilePath, adminPw, date, dur) {
     var newTest = new testDetails({

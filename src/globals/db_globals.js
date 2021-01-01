@@ -23,6 +23,10 @@ function connectToDb(dbName) {
     });
 }
 
+function disconnectFromDb() {
+    mongoose.connection.close();
+}
+
 //File Variables
 const srExt = "_screen_recording.avi";
 const arExt = "_audio_recording.wav";
@@ -34,4 +38,4 @@ const arBucket = "audio_recordings";
 const wrBucket = "webcam_recordings";
 const ansBucket = "answers";
 
-module.exports = {connectToDb, srExt, arExt, wrExt, testQnBucket, srBucket, arBucket, wrBucket};
+module.exports = {connectToDb, disconnectFromDb, srExt, arExt, wrExt, testQnBucket, srBucket, arBucket, wrBucket};

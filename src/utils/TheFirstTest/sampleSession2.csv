@@ -1,0 +1,4 @@
+TEST_ALIAS,SESSION_ID,STU_ID,STU_PW,INVIL_ID,INVIL_PW
+test_name,2,bob,bob_pw,god1,god_pw1
+,,bobby,bobby_pw,god2,god_pw2
+,,bobbles,bobbles_pw,god3,god_pw3
