@@ -1,93 +1,95 @@
-const {connectToDb} = require('../../../globals/db_globals.js')
+const {connectToDb, SR_EXT, AR_EXT, WR_EXT, WR_BUCKET, SR_BUCKET, AR_BUCKET, disconnectFromDb} = require('../globals/db_globals.js')
 const path = require('path');
-const mongoose = require('mongoose'); 
-const mongoDriver = mongoose.mongo;
-const GridFS = require('gridfs-stream');
-const connection = mongoose.connection;
 const fs = require('fs'); // For creating read and write streams
-const dbName = sessionStorage.getItem("test_alias");
+const mongodb = require('mongodb');
+try {
+    run_test();
+} catch (e) {
+    console.error(e);
+}
 
+async function run_test() {
+    let connection = await connectToDb("TheFirstTest");
+    await sendFilesInDir("/home/tootie/Desktop/Projects/LumiTestServer/src/utils/TheFirstTest_Submissions", connection)
+    //disconnectFromDb();
+}
 
-function sendAllFilesInDirectory(studentDirectoryPath, bucket) {
-    fs.readdir(studentDirectoryPath, function(err, directory) {
+function sendFilesInDir(dirPath, connection) {
+    fs.readdir(dirPath, function(err, directory) {
         if (err) {
             return console.error(err);
         }
-        directory.forEach(function (fileName) {
-            var filePath = studentDirectoryPath + "/" + fileName;
-
-            fs.createReadStream(filePath).
-            pipe(bucket.openUploadStream(testAlias + "_" + fileName)).
-            on('error', function(error) {
-                assert.ifError(error);
-            }).
-            on('finish', function() {
-                console.log('done!');
-            });
+        directory.forEach(function (stuDir) {
+            let stuDirPath = path.join(dirPath, stuDir);
+            fs.readdir(stuDirPath, function(err, files) {
+                if (err) {
+                    return console.error(err);
+                }
+                for (file of files) {
+                    let filePath = path.join(stuDirPath, file);
+                    let ext = file.split("_")[1];
+                    switch (ext) {
+                        case SR_EXT:
+                            uploadScreenRecording(filePath, file, connection);
+                            break;
+                        case AR_EXT:
+                            uploadAudioRecording(filePath, file, connection);
+                            break;
+                        case WR_EXT:
+                            uploadWebcamRecording(filePath, file, connection);
+                            break;
+                        default: 
+                            console.log("ext: ", ext);
+                            throw Error("Attempted to upload file with unhandled extension");
+                    }
+                    
+                }
+            })
         })
     })
 }
 
-function uploadAllFiles(gfs) {
-    connectToDb(dbName);
-
-    connection.once('connected', function() {
-        console.log("Getting ready to upload files...");
-        //console.log("Connection db: ", connection.db);    
-        uploadCamRecording(gfs);
-        uploadAudioFile(gfs);
-        uploadScreenRecording(gfs);
-        uploadAnswerFile(gfs);
-        var gfs = GridFS(connection.db, mongoDriver);
-    })
-
+function uploadWebcamRecording(filePath, fileName, connection) {
+    const bucket = new mongodb.GridFSBucket(connection.db, {
+        bucketName: WR_BUCKET
+      });
+      
+      fs.createReadStream(filePath).
+        pipe(bucket.openUploadStream(fileName)).
+        on('error', function(error) {
+            console.error(error);
+        }).
+        on('finish', function() {
+          console.log('done!');
+        });
 }
 
-function uploadCamRecording(gfs) {
-    var camRecordingPath = path.join(__dirname, '../../../output/AudioRecording_user.wav')
-    var writeStream = gfs.createWriteStream({
-        // Any of the GridFS file chunks collection
-        // Left empty because file should 
-    });
-
-    fs.createReadStream(camRecordingPath).pipe(writeStream);
-    writeStream.on('close', function (error, result) {
-        if (error) {
-            console.error(error);
-        }
-        console.log("Result:", result); 
-    })
+function uploadScreenRecording(filePath, fileName, connection) {
+    const bucket = new mongodb.GridFSBucket(connection.db, {
+        bucketName: SR_BUCKET
+      });
+      
+      fs.createReadStream(filePath).
+        pipe(bucket.openUploadStream(fileName)).
+        on('error', function(error) {
+          console.error(error);
+        }).
+        on('finish', function() {
+          console.log('done!');
+        });
 }
 
-function uploadAudioFile(gfs) {
-    //var audioPath = path.join(__dirname, '../../../output/AudioRecording_user.wav')
-    var camRecordingPath = path.join(__dirname, '../../../output/AudioRecording_user.wav')
-    var writeStream = gfs.createWriteStream({
-        // Any of the GridFS file chunks collection
-        // Left empty because file should 
-    });
-
-    fs.createReadStream(camRecordingPath).pipe(writeStream);
-    writeStream.on('close', function (error, result) {
-        if (error) {
+function uploadAudioRecording(filePath, fileName, connection) {
+    const bucket = new mongodb.GridFSBucket(connection.db, {
+        bucketName: AR_BUCKET
+      });
+      
+      fs.createReadStream(filePath).
+        pipe(bucket.openUploadStream(fileName)).
+        on('error', function(error) {
             console.error(error);
-        }
-        console.log("Result:", result); 
-    })
-}
-
-function uploadAnswerFile(gfs) {
-    var camRecordingPath = path.join(__dirname, '../../../output/AudioRecording_user.wav')
-    var writeStream = gfs.createWriteStream({
-        // Any of the GridFS file chunks collection
-        // Left empty because file should 
-    });
-
-    fs.createReadStream(camRecordingPath).pipe(writeStream);
-    writeStream.on('close', function (error, result) {
-        if (error) {
-            console.error(error);
-        }
-        console.log("Result:", result); 
-    })
+        }).
+        on('finish', function() {
+          console.log('done!');
+        });
 }

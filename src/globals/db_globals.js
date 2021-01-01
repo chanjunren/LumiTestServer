@@ -8,15 +8,16 @@ function getFullUri (password, dbName) {
         + "@lumitest.vyes5.mongodb.net/" + dbName + "?retryWrites=true&w=majority";
 }
 
-function connectToDb(dbName) {
+async function connectToDb(dbName) {
     const connect_options = {
         useNewUrlParser: true,
         useUnifiedTopology: true,
         useCreateIndex: true
     }
     mongoose.connect(getFullUri(password, dbName), connect_options);
-    mongoose.connection.on('connected', function() {
+    return mongoose.connection.on('connected', async function() {
         console.log("Connected to DB...");
+        return mongoose.connection.db;
     })
     mongoose.connection.on('error', err => {
         console.log(err);
@@ -28,14 +29,12 @@ function disconnectFromDb() {
 }
 
 //File Variables
-const srExt = "_screen_recording.avi";
-const arExt = "_audio_recording.wav";
-const wrExt = "_webcam_recording.avi";
+const SR_EXT = "screenRecording.avi";
+const AR_EXT = "audioRecording.wav";
+const WR_EXT = "webcamRecording.avi";
 
-const testQnBucket = "test_admin";
-const srBucket = "screen_recordings";
-const arBucket = "audio_recordings";
-const wrBucket = "webcam_recordings";
-const ansBucket = "answers";
+const SR_BUCKET = "screen_recordings";
+const AR_BUCKET = "audio_recordings";
+const WR_BUCKET = "webcam_recordings";
 
-module.exports = {connectToDb, disconnectFromDb, srExt, arExt, wrExt, testQnBucket, srBucket, arBucket, wrBucket};
+module.exports = {connectToDb, disconnectFromDb, SR_EXT, AR_EXT, WR_EXT, SR_BUCKET, AR_BUCKET, WR_BUCKET};
