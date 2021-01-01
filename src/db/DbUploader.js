@@ -7,22 +7,43 @@ const connection = mongoose.connection;
 const fs = require('fs'); // For creating read and write streams
 const dbName = sessionStorage.getItem("test_alias");
 
-function sendAllFiles(gfs) {
+
+function sendAllFilesInDirectory(studentDirectoryPath, bucket) {
+    fs.readdir(studentDirectoryPath, function(err, directory) {
+        if (err) {
+            return console.error(err);
+        }
+        directory.forEach(function (fileName) {
+            var filePath = studentDirectoryPath + "/" + fileName;
+
+            fs.createReadStream(filePath).
+            pipe(bucket.openUploadStream(testAlias + "_" + fileName)).
+            on('error', function(error) {
+                assert.ifError(error);
+            }).
+            on('finish', function() {
+                console.log('done!');
+            });
+        })
+    })
+}
+
+function uploadAllFiles(gfs) {
     connectToDb(dbName);
 
     connection.once('connected', function() {
         console.log("Getting ready to upload files...");
         //console.log("Connection db: ", connection.db);    
-        sendCamRecording(gfs);
-        sendAudioFile(gfs);
-        sendScreenRecording(gfs);
-        sendAnswerFile(gfs);
+        uploadCamRecording(gfs);
+        uploadAudioFile(gfs);
+        uploadScreenRecording(gfs);
+        uploadAnswerFile(gfs);
         var gfs = GridFS(connection.db, mongoDriver);
     })
 
 }
 
-function sendCamRecording(gfs) {
+function uploadCamRecording(gfs) {
     var camRecordingPath = path.join(__dirname, '../../../output/AudioRecording_user.wav')
     var writeStream = gfs.createWriteStream({
         // Any of the GridFS file chunks collection
@@ -38,7 +59,7 @@ function sendCamRecording(gfs) {
     })
 }
 
-function sendAudioFile(gfs) {
+function uploadAudioFile(gfs) {
     //var audioPath = path.join(__dirname, '../../../output/AudioRecording_user.wav')
     var camRecordingPath = path.join(__dirname, '../../../output/AudioRecording_user.wav')
     var writeStream = gfs.createWriteStream({
@@ -55,7 +76,7 @@ function sendAudioFile(gfs) {
     })
 }
 
-function sendAnswerFile(gfs) {
+function uploadAnswerFile(gfs) {
     var camRecordingPath = path.join(__dirname, '../../../output/AudioRecording_user.wav')
     var writeStream = gfs.createWriteStream({
         // Any of the GridFS file chunks collection
@@ -70,8 +91,3 @@ function sendAnswerFile(gfs) {
         console.log("Result:", result); 
     })
 }
-
-function getTestFile(session_id) {
-
-}
-

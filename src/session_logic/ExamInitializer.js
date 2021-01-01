@@ -1,8 +1,8 @@
 const csv = require('csvtojson');
 const fs = require('fs'); // For creating read and write streams
-const {sessionIdKey, invilIdKey, invilPwKey, stuIdKey, stuPwKey} = require('../src/utils/CsvHeaders.js');
-const { connectToDb, disconnectFromDb } = require("./globals/db_globals.js");
-const { accountDetails, INVIL_TYPE, STU_TYPE } = require("./globals/db_schemas.js");
+const {sessionIdKey, invilIdKey, invilPwKey, stuIdKey, stuPwKey} = require('../globals/csv_headers.js');
+const { connectToDb, disconnectFromDb } = require("../globals/db_globals.js");
+const { accountDetails, INVIL_TYPE, STU_TYPE } = require("../models/db_schemas.js");
 const mongoose = require('mongoose');
 const connection = mongoose.connection;
 

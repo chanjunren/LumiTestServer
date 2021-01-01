@@ -1,4 +1,5 @@
-const connectToDb = require('../src/globals/db_globals')
+const connectToDb = require('../globals/db_globals')
+
 
 // does not work if directory does not exist
 function getAllFilesOf(studentId) {
