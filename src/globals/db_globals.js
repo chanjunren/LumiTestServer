@@ -15,13 +15,15 @@ async function connectToDb(dbName) {
         useCreateIndex: true
     }
     mongoose.connect(getFullUri(password, dbName), connect_options);
+    mongoose.connection.on('error', err => {
+        console.log(err);
+    });
     return mongoose.connection.on('connected', async function() {
         console.log("Connected to DB...");
         return mongoose.connection.db;
     })
-    mongoose.connection.on('error', err => {
-        console.log(err);
-    });
+    
+    
 }
 
 function disconnectFromDb() {

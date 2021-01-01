@@ -1,24 +1,37 @@
-const connectToDb = require('../globals/db_globals')
+const {connectToDb, SR_EXT, AR_EXT, WR_EXT, WR_BUCKET, SR_BUCKET, AR_BUCKET, disconnectFromDb} = require('../globals/db_globals')
+const path = require('path');
+const mongodb = require('mongodb');
+const fs = require('fs');
 
+try {
+    run_test();
+} catch (e) {
+    console.error(e);
+}
+
+async function run_test() {
+    let connection = await connectToDb("TheFirstTest");
+    getAllFilesOf("e0123123", connection);
+    //disconnectFromDb();
+}
 
 // does not work if directory does not exist
-function getAllFilesOf(studentId) {
-    connectToDb(testAlias);
+function getAllFilesOf(studentId, connection) {    
+
+    console.log("Getting ready to get all files...");
+    getWebcamRecording(studentId, connection);
+    getScreenRecording(studentId, connection);
+    //getAudioRecording(studentId, connection);
+}
+
+
+function getWebcamRecording(studentId, connection) {
+    var fileName = studentId + "_" + WR_EXT;
+    var outputPath = path.join(__dirname, "/dbOutput/" + fileName);
     
-    connection.once('connected', function() {
-        console.log("Getting ready to get all files...");
-        var bucket = new mongoose.mongo.GridFSBucket(connection.db);
-        getAnswerFile(bucket, studentId);
-        getWebcamRecording(bucket, studentId);
-        getScreenRecording(bucket, studentId);
-        getAudioRecording(bucket, studentId);
+    let bucket = new mongodb.GridFSBucket(connection.db, {
+        bucketName: WR_BUCKET
     });
-}
-
-function getAnswerFile(bucket, studentId) {
-    var fileName = testAlias + "_" + studentId + "_answers.txt";
-    var outputPath = path.join(__dirname, "/dbOutput/" + fileName);
-
     bucket.openDownloadStreamByName(fileName).
         pipe(fs.createWriteStream(outputPath)).
         on('error', function(error) {
@@ -29,10 +42,13 @@ function getAnswerFile(bucket, studentId) {
         });
 }
 
-function getWebcamRecording(bucket, studentId) {
-    var fileName = testAlias + "_" + studentId + webcamRecordingExtension;
+function getAudioRecording(studentId, connection) {
+    var fileName = studentId + "_" + AR_EXT;
     var outputPath = path.join(__dirname, "/dbOutput/" + fileName);
-
+    
+    let bucket = new mongodb.GridFSBucket(connection.db, {
+        bucketName: AR_BUCKET
+    });
     bucket.openDownloadStreamByName(fileName).
         pipe(fs.createWriteStream(outputPath)).
         on('error', function(error) {
@@ -43,24 +59,13 @@ function getWebcamRecording(bucket, studentId) {
         });
 }
 
-function getScreenRecording(bucket, studentId) {
-    var fileName = testAlias + "_" + studentId + screenRecordingExtension;
+function getScreenRecording(studentId, connection) {
+    var fileName = studentId + "_" + SR_EXT;
     var outputPath = path.join(__dirname, "/dbOutput/" + fileName);
-
-    bucket.openDownloadStreamByName(fileName).
-        pipe(fs.createWriteStream(outputPath)).
-        on('error', function(error) {
-            console.error(error);
-        }).
-        on('finish', function() {
-            console.log('done!');
-        });
-}
-
-function getAudioRecording(bucket, studentId) {
-    var fileName = testAlias + "_" + studentId + audioRecordingExtension;
-    var outputPath = path.join(__dirname, "/dbOutput/" + fileName);
-
+    
+    let bucket = new mongodb.GridFSBucket(connection.db, {
+        bucketName: SR_BUCKET
+    });
     bucket.openDownloadStreamByName(fileName).
         pipe(fs.createWriteStream(outputPath)).
         on('error', function(error) {

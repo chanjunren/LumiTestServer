@@ -2,6 +2,7 @@ const {connectToDb, SR_EXT, AR_EXT, WR_EXT, WR_BUCKET, SR_BUCKET, AR_BUCKET, dis
 const path = require('path');
 const fs = require('fs'); // For creating read and write streams
 const mongodb = require('mongodb');
+
 try {
     run_test();
 } catch (e) {
