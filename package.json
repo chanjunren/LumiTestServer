@@ -26,6 +26,7 @@
     "moment": "^2.29.1",
     "mongodb": "^3.6.3",
     "mongoose": "^5.11.9",
-    "socket.io": "^3.0.4"
+    "socket.io": "^3.0.4",
+    "socket.io-stream": "^0.9.1"
   }
 }
