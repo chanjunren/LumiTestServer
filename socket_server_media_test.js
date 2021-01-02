@@ -4,7 +4,6 @@ var ss = require('socket.io-stream');
 var path = require('path');
 
 var Files = {};
-var streamLength = require("stream-length");
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
