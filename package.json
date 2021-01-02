@@ -19,5 +19,9 @@
   "homepage": "https://github.com/chanjunren/LumiTestServer#readme",
   "devDependencies": {
     "electron": "^11.1.1"
+  },
+  "dependencies": {
+    "socket.io": "^3.0.4",
+    "socket.io-stream": "^0.9.1"
   }
 }
