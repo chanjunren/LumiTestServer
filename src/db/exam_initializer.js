@@ -1,10 +1,9 @@
 const csv = require('csvtojson');
 const fs = require('fs'); // For creating read and write streams
 const {sessionIdKey, invilIdKey, invilPwKey, stuIdKey, stuPwKey} = require('../globals/csv_headers.js');
-const { connectToDb, disconnectFromDb } = require("../globals/db_globals.js");
-const { accountDetails, INVIL_TYPE, STU_TYPE } = require("../models/db_schemas.js");
+const {getConnection} = require("../globals/db_globals.js");
+const { getAccountsModel, INVIL_TYPE, STU_TYPE } = require("../models/db_schemas.js");
 const mongoose = require('mongoose');
-const connection = mongoose.connection;
 
 test_run();
 
@@ -12,14 +11,10 @@ async function test_run() {
   try {
     let dirPath = '/home/tootie/Desktop/Projects/LumiTestServer/src/utils/TheFirstTest/';
     let testAlias = getTestAlias(dirPath);
-    connectToDb(testAlias)
-    
-    connection.once('connected', async function() {
-      await uploadAllSessionsToDb(dirPath);
-
+    let conn = getConnection(testAlias);
+    conn.once('connected', async function() {
+      await uploadAllSessionsToDb(conn, dirPath);
     });
-    //disconnectFromDb();
-
   } catch(err) {
     console.error("Error:", err)
   }
@@ -31,7 +26,7 @@ function getTestAlias(dirPath) {
   return testAlias;
 }
 
-async function uploadAllSessionsToDb(dirPath) {
+async function uploadAllSessionsToDb(connection, dirPath) {
   fs.readdir(dirPath, function(err, directory) {
     if (err) {
         return console.error(err);
@@ -40,7 +35,7 @@ async function uploadAllSessionsToDb(dirPath) {
         var filePath = dirPath + "/" + fileName;
 
         let details = await extractInfoFromSessionCsv(filePath);
-        await uploadSessionAccsToDb(details);
+        await uploadSessionAccsToDb(connection, details);
     })
 })
 }
@@ -63,8 +58,10 @@ async function extractInfoFromSessionCsv(filePath) {
     })
 }
 
-async function uploadSessionAccsToDb(details) {
+async function uploadSessionAccsToDb(connection, details) {
   const {sessionId, invilAccs, stuAccs} = details;
+  var accountDetails = getAccountsModel(connection);
+
   for (const [id, pw] of invilAccs.entries()) {
     var newAcc = new accountDetails({
       sessionIdx: sessionId,
@@ -74,6 +71,7 @@ async function uploadSessionAccsToDb(details) {
     })
     await newAcc.save(function (err, doc) {
       if (err) {
+        console.error(err);
         throw err;
       }
       console.log("Succesfully uploaded account");

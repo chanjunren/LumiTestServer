@@ -3,7 +3,7 @@ const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 
 const {chatMsgEvent, joinEvent, formatMessage, getWelcomeMessage, getJoinMessage} = require('../globals/chat_globals');
-const {userJoin, getCurrentUser} = require('../chat/user_utils');
+const {userJoin, getCurrentUser} = require('./chat_utils');
 
 const TEST_ALIAS = "cs3103-test-lol"
 

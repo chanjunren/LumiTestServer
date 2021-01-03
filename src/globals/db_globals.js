@@ -8,22 +8,13 @@ function getFullUri (password, dbName) {
         + "@lumitest.vyes5.mongodb.net/" + dbName + "?retryWrites=true&w=majority";
 }
 
-async function connectToDb(dbName) {
+function getConnection(dbName) {
     const connect_options = {
         useNewUrlParser: true,
         useUnifiedTopology: true,
         useCreateIndex: true
     }
-    mongoose.connect(getFullUri(password, dbName), connect_options);
-    mongoose.connection.on('error', err => {
-        console.log(err);
-    });
-    return mongoose.connection.on('connected', async function() {
-        console.log("Connected to DB...");
-        return mongoose.connection.db;
-    })
-    
-    
+    return mongoose.createConnection(getFullUri(password, dbName), connect_options);
 }
 
 function disconnectFromDb() {
@@ -39,4 +30,4 @@ const SR_BUCKET = "screen_recordings";
 const AR_BUCKET = "audio_recordings";
 const WR_BUCKET = "webcam_recordings";
 
-module.exports = {connectToDb, disconnectFromDb, SR_EXT, AR_EXT, WR_EXT, SR_BUCKET, AR_BUCKET, WR_BUCKET};
+module.exports = {getConnection, SR_EXT, AR_EXT, WR_EXT, SR_BUCKET, AR_BUCKET, WR_BUCKET};
