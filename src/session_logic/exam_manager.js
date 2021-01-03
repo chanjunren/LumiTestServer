@@ -7,6 +7,14 @@ function createNewExamManager(testAlias) {
         testAlias: testAlias,
         conn: getConnection(testAlias),
         masterList: new Map(),
+        validateId: function(masterList, userId) {
+            return masterList.has(userId);
+        },
+        validatePw: function(masterList, userId, pw) {
+            console.log("DB PW: ", masterList);
+            console.log("PW:", pw);
+            return masterList.get(userId).pw == pw;
+        }
     }
     return examManager;    
 }

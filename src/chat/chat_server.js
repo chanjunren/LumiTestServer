@@ -33,5 +33,4 @@ io.on('connection', (socket) => {
             io.to(user.session).emit(chatMsgEvent, 'a user has left...');
         })
     })
-    
 })
