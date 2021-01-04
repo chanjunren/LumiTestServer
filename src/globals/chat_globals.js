@@ -2,6 +2,7 @@ const moment = require('moment');
 
 const chatUrl = 'http://localhost:5000';
 const chatMsgEvent = 'chatMessage';
+const mediaMsgEvent = 'chatMediaMessage';
 const infoEvent = 'infoText';
 const joinEvent = 'joinSession';
 const populateUsersEvent = 'populateUsers';
@@ -35,5 +36,5 @@ function formatMessage(user, msg) {
     }
 }
 
-module.exports = {chatUrl, joinEvent, chatMsgEvent, infoEvent, populateUsersEvent, invilUserType, studentUserType,
+module.exports = {chatUrl, joinEvent, chatMsgEvent, mediaMsgEvent, infoEvent, populateUsersEvent, invilUserType, studentUserType,
                   formatMessage, getWelcomeMessage, getJoinMessage, getLeftMessage, getInvalidUserMessage};
