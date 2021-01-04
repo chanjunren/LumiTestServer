@@ -1,5 +1,5 @@
 {
-  "name": "LumiTestServer",
+  "name": "lumitest-server",
   "version": "1.0.0",
   "description": "Server side code for LumiTEST",
   "main": "src/main.js",

@@ -2,15 +2,76 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Hello World!</title>
+    <title>LumiTest Server</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
 </head>
 <body style="background: white;">
-    <h1>Hello World!</h1>
-    <p>
-        We are using node <script>document.write(process.versions.node)</script>,
-        Chrome <script>document.write(process.versions.chrome)</script>,
-        and Electron <script>document.write(process.versions.electron)</script>.
-    </p>
+    <div class="input-container">
+        <input id="test-alias-input" type="text" placeholder="Test Alias"/>
+        <button class="btn btn-outline-dark">Initiate Exam</button>
+        <button class="btn btn-outline-danger">Close Current</button>
+    </div>
+    <div class="control-container">
+        <button  class="btn btn-outline-warning">Previous</button>
+        <p id="exam-title">Test Title</p>
+        <button class="btn btn-outline-info">Next</button>
+    </div>
+    
+    <table class="content-table hi" display="none">
+        <thead>
+          <tr>
+            <th>Session</th>
+            <th>Type</th>
+            <th>Name</th>
+            <th>Connected</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Invigilator</td>
+            <td>Domenic</td>
+            <td>88,110</td>
+            <td>False</td>
+        </tr>
+          <tr>
+            <td>Student</td>
+            <td>Sally</td>
+            <td>72,400</td>
+            <td>False</td>
+          </tr>
+          <tr>
+            <td>Student</td>
+            <td>Nick</td>
+            <td>52,300</td>
+            <td>False</td>
+          </tr>
+          <tr>
+            <td>Student</td>
+            <td>Nick</td>
+            <td>52,300</td>
+            <td>False</td>
+          </tr>
+          <tr>
+            <td>Student</td>
+            <td>Nick</td>
+            <td>52,300</td>
+            <td>False</td>
+          </tr>
+          <tr>
+            <td>Student</td>
+            <td>Nick</td>
+            <td>52,300</td>
+            <td>False</td>
+          </tr>
+          <tr>
+            <td>Student</td>
+            <td>Nick</td>
+            <td>52,300</td>
+            <td>False</td>
+          </tr>
+        </tbody>
+      </table>
 </body>
 </html>

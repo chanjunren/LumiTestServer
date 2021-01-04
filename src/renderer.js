@@ -1,0 +1,1 @@
+const initiateExamBtn = document.getElementById("test-alias-input");
