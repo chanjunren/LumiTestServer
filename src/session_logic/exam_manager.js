@@ -19,6 +19,23 @@ function createNewExamManager(testAlias) {
     return examManager;    
 }
 
+async function initiateExam(testAlias, managerMap) {
+    return new Promise(function(resolve, reject) {
+        var examManager = createNewExamManager(testAlias);
+        examManager.conn.once('connected', async function() {
+            try {
+              await init(examManager);
+              console.log("=== Initiated ===")
+              showStatsOf(examManager);
+              resolve(managerMap.set(testAlias, examManager));
+            }
+            catch(e) {
+              console.error(e);
+            }
+        })
+    })
+}
+
 async function init(examManager) {
     let accounts = await retrieveMasterList(examManager.conn);
     for (account of accounts) {
@@ -39,4 +56,4 @@ function showStatsOf(examManager) {
     console.log("Master List:", examManager.masterList);
 }
 
-module.exports = {createNewExamManager, init, showStatsOf};
+module.exports = {initiateExam};
