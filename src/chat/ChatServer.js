@@ -73,7 +73,7 @@ io.on('connection', (socket) => {
                 var dest_session = dest_sessions[0];
                 if (dest_session != null) {
                     if (dest_id == 'all_invils') {
-                        broadcastMsgToType(senderUserName, session, invilUserType, msg);
+                        broadcastMsgToType(senderUserName, dest_session, invilUserType, msg);
                     } else if (getUserType(dest_id) == invilUserType) {
                         sendToId(senderUserName, dest_id, msg);
                     }
@@ -83,13 +83,13 @@ io.on('connection', (socket) => {
             function sendMessageFromInvigilator(senderUserName, dest_id, dest_sessions, msg) {
                 if (dest_id == 'all_invils' || dest_id == 'all') {
                     for (i in dest_sessions) {
-                        session = dest_sessions[i]
+                        var session = dest_sessions[i];
                         broadcastMsgToType(senderUserName, session, invilUserType, msg);
                     }
                 } 
                 if (dest_id == 'all_students' || dest_id == 'all') {
                     for (i in dest_sessions) {
-                        session = dest_sessions[i]
+                        var session = dest_sessions[i]
                         broadcastMsgToType(senderUserName, session, studentUserType, msg);
                     }
                 }
@@ -163,9 +163,9 @@ io.on('connection', (socket) => {
 
                 const senderUserName = getUserName(sender_userId);
                 if (userType == invilUserType) {
-                    sendMessageFromInvigilator(senderUserName, dest_id, session, msg);
+                    sendMessageFromInvigilator(senderUserName, dest_id, dest_sessions, msg);
                 } else {
-                    sendMessageFromStudent(senderUserName, dest_id, session, msg);
+                    sendMessageFromStudent(senderUserName, dest_id, dest_sessions, msg);
                 }
                     // io.to(user.session).emit(chatMsgEvent, msg);   
             })

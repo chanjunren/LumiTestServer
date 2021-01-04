@@ -4,20 +4,20 @@ var invilUserType = 'invil'
 var studentUserType = 'student'
 
 // To be replaced with database
-userIdToUserName = {'e0123123': 'Abc \'def', 'e0123124': 'Alice', 'e0123125': 'Bob', 
-                    'invil1': 'Prof Tan', 'invil2': 'Mr Wang'};
+userIdToUserName = {'e0123123': 'Abc \'def', 'e0123124': 'Alice A Very Very VeryVeryVeryVeryVeryLongName', 'e0123125': 'Bob', 
+                    'invil1': 'Prof Tan', 'invil2': 'Mr Wang', 'invil3': 'Ms Wendy'};
 function getUserName(userId) {    
     return userIdToUserName[userId];
 }
 
 userIdToUserType = {'e0123123': studentUserType, 'e0123124': studentUserType, 'e0123125': studentUserType, 
-                    'invil1': invilUserType, 'invil2': invilUserType};
+                    'invil1': invilUserType, 'invil2': invilUserType, 'invil3': invilUserType};
 function getUserType(userId) {
     return userIdToUserType[userId];
 }
 
 sessionToUserIds = {'exampleSession': {'e0123123': 1, 'e0123124': 1, 'e0123125': 1, 
-                    'invil1': 1, 'invil2': 1}};
+                    'invil1': 1, 'invil2': 1, 'invil3': 1}};
 function isValidUser(userId, session) {
     return sessionToUserIds[session] != undefined && sessionToUserIds[session][userId] != undefined;
 }
