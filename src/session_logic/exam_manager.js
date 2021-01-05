@@ -16,22 +16,20 @@ function createNewExamManager(testAlias) {
             return masterList.get(userId).pw == pw;
         }
     }
-    return examManager;    
+    return examManager;
 }
 
 async function initiateExam(testAlias, managerMap) {
     return new Promise(function(resolve, reject) {
         var examManager = createNewExamManager(testAlias);
         examManager.conn.once('connected', async function() {
-            try {
-              await init(examManager);
-              console.log("=== Initiated ===")
-              showStatsOf(examManager);
-              resolve(managerMap.set(testAlias, examManager));
+            await init(examManager);
+            console.log("=== Initiated ===")
+            showStatsOf(examManager);
+            if (examManager.masterList.size == 0) {
+                reject(new Error("Database not found!"));
             }
-            catch(e) {
-              console.error(e);
-            }
+            resolve(managerMap.set(testAlias, examManager));
         })
     })
 }

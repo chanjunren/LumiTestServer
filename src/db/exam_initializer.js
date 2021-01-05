@@ -3,7 +3,6 @@ const fs = require('fs'); // For creating read and write streams
 const {sessionIdKey, invilIdKey, invilPwKey, stuIdKey, stuPwKey} = require('../globals/csv_headers.js');
 const {getConnection} = require("../globals/db_globals.js");
 const { getAccountsModel, INVIL_TYPE, STU_TYPE } = require("../models/db_schemas.js");
-const mongoose = require('mongoose');
 
 test_run();
 
