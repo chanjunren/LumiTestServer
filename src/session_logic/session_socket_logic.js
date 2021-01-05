@@ -3,6 +3,7 @@ const {INVIL_TYPE} = require('../models/db_schemas');
 
 function configureSessionLogic(socket) {
     socket.on(JOIN_SESSION_REQ, msg => {
+        console.log("Msg recvd: ", msg);
         const {testAlias, id, pw} = msg;
         let manager = managerMap.get(testAlias);
 

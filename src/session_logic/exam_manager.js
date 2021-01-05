@@ -21,6 +21,9 @@ function createNewExamManager(testAlias) {
 
 async function initiateExam(testAlias, managerMap) {
     return new Promise(function(resolve, reject) {
+        if (managerMap.has(testAlias)) {
+            reject(new Error("Database has already been connected!"));
+        }
         var examManager = createNewExamManager(testAlias);
         examManager.conn.once('connected', async function() {
             await init(examManager);
