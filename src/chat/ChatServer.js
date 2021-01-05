@@ -46,11 +46,13 @@ io.on('connection', (socket) => {
                     var room_name = session + '_' + userType;
                     if (roomsToSocketIdsMap[room_name] != undefined) {
                         for (clientSocketId in roomsToSocketIdsMap[room_name]) {
-                            var userId = socketIdsToUserMap[clientSocketId].userId;
-                            var clientSocket = userIdToSocketsMap[userId];
-                            var sendStream = ss.createStream();                    
-                            ss(clientSocket).emit(mediaMsgEvent, sendStream, senderUserName, msg, sendAsAnnouncement);
-                            stream.pipe(sendStream);
+                            if (clientSocketId != socket.id) {
+                                var userId = socketIdsToUserMap[clientSocketId].userId;
+                                var clientSocket = userIdToSocketsMap[userId];
+                                var sendStream = ss.createStream();                    
+                                ss(clientSocket).emit(mediaMsgEvent, sendStream, senderUserName, msg, sendAsAnnouncement);
+                                stream.pipe(sendStream);
+                            }
                         }
                     }
                 }
