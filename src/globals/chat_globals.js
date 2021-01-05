@@ -7,6 +7,8 @@ const infoEvent = 'infoText';
 const joinEvent = 'joinSession';
 const populateUsersEvent = 'populateUsers';
 const chatErrorEvent = 'chatError';
+const allInvilsId = 'all_invils';
+const allStudentsId = 'all_students';
 
 const invilUserType = 'invil'
 const studentUserType = 'student'
@@ -36,5 +38,7 @@ function formatMessage(user, msg) {
     }
 }
 
-module.exports = {chatUrl, joinEvent, chatMsgEvent, mediaMsgEvent, infoEvent, populateUsersEvent, invilUserType, studentUserType,
-                  formatMessage, getWelcomeMessage, getJoinMessage, getLeftMessage, getInvalidUserMessage};
+module.exports = {chatUrl, joinEvent, chatMsgEvent, chatErrorEvent, mediaMsgEvent, infoEvent, 
+                  populateUsersEvent, invilUserType, studentUserType,
+                  formatMessage, getWelcomeMessage, getJoinMessage, getLeftMessage, 
+                  getInvalidUserMessage, allInvilsId, allStudentsId};

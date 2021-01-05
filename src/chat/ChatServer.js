@@ -2,8 +2,10 @@ const app = require('express')();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 
-const {chatMsgEvent, mediaMsgEvent, joinEvent, infoEvent, populateUsersEvent, chatErrorEvent, studentUserType, invilUserType,
-       formatMessage, getWelcomeMessage, getJoinMessage, getLeftMessage, getInvalidUserMessage} = require('../globals/chat_globals');
+const {chatMsgEvent, mediaMsgEvent, joinEvent, infoEvent, populateUsersEvent, 
+       chatErrorEvent, studentUserType, invilUserType,
+       formatMessage, getWelcomeMessage, getJoinMessage, getLeftMessage, 
+       getInvalidUserMessage, allInvilsId, allStudentsId} = require('../globals/chat_globals');
 const {userJoin, getCurrentUser, getUserName, getInvilSessions, getUserType, isValidUser, isValidUserIdAndSessions} = require('../chat/user_utils');
 const { connected } = require('process');
 const { RSA_PKCS1_PADDING } = require('constants');
@@ -34,12 +36,12 @@ io.on('connection', (socket) => {
                 .emit(infoEvent, session, infoType, info);
             }
 
-            function broadcastMsgToType(senderUserName, session, userType, msg, stream='') {
-                console.log('stream:', stream);                  
+            function broadcastMsgToType(senderUserName, session, userType, msg, sendAsAnnouncement, stream='') {
+                // console.log('stream:', stream);
                 if (stream == '') {
                     socket.broadcast
                     .to(session + '_' + userType)
-                    .emit(chatMsgEvent, senderUserName, msg);
+                    .emit(chatMsgEvent, senderUserName, msg, sendAsAnnouncement);
                 } else {
                     var room_name = session + '_' + userType;
                     if (roomsToSocketIdsMap[room_name] != undefined) {
@@ -47,7 +49,7 @@ io.on('connection', (socket) => {
                             var userId = socketIdsToUserMap[clientSocketId].userId;
                             var clientSocket = userIdToSocketsMap[userId];
                             var sendStream = ss.createStream();                    
-                            ss(clientSocket).emit(mediaMsgEvent, sendStream, senderUserName, msg);
+                            ss(clientSocket).emit(mediaMsgEvent, sendStream, senderUserName, msg, sendAsAnnouncement);
                             stream.pipe(sendStream);
                         }
                     }
@@ -84,7 +86,7 @@ io.on('connection', (socket) => {
             function sendToId(senderUserName, dest_id, msg, stream='') {
                 var destinationSocket = userIdToSocketsMap[dest_id];
                 if (destinationSocket != undefined) {
-                    console.log('stream:', stream);                  
+                    // console.log('stream:', stream);                  
                     if (stream == '') {
                         destinationSocket.emit(chatMsgEvent, senderUserName, msg);
                     } else {
@@ -98,28 +100,29 @@ io.on('connection', (socket) => {
             function sendMessageFromStudent(senderUserName, dest_id, dest_sessions, msg, stream='') {
                 var dest_session = dest_sessions[0];
                 if (dest_session != null) {
-                    if (dest_id == 'all_invils') {
-                        broadcastMsgToType(senderUserName, dest_session, invilUserType, msg, stream);
+                    if (dest_id == allInvilsId) {
+                        broadcastMsgToType(senderUserName, dest_session, invilUserType, msg, false, stream);
                     } else if (getUserType(dest_id) == invilUserType) {
                         sendToId(senderUserName, dest_id, msg, stream);
                     }
                 }
             }
 
-            function sendMessageFromInvigilator(senderUserName, dest_id, dest_sessions, msg, stream='') {
-                if (dest_id == 'all_invils' || dest_id == 'all') {
+            function sendMessageFromInvigilator(senderUserName, dest_id, dest_sessions, msg, sendAsAnnouncement, stream='') {
+                if (sendAsAnnouncement) { dest_id = 'all'; }
+                if (dest_id == allInvilsId || dest_id == 'all') {
                     for (i in dest_sessions) {
                         var session = dest_sessions[i];
-                        broadcastMsgToType(senderUserName, session, invilUserType, msg, stream);
+                        broadcastMsgToType(senderUserName, session, invilUserType, msg, sendAsAnnouncement, stream);
                     }
                 } 
-                if (dest_id == 'all_students' || dest_id == 'all') {
+                if (dest_id == allStudentsId || dest_id == 'all') {
                     for (i in dest_sessions) {
                         var session = dest_sessions[i]
-                        broadcastMsgToType(senderUserName, session, studentUserType, msg, stream);
+                        broadcastMsgToType(senderUserName, session, studentUserType, msg, sendAsAnnouncement, stream);
                     }
                 }
-                if (dest_id != 'all_invils' && dest_id != 'all_students' && dest_id != 'all') {
+                if (dest_id != allInvilsId && dest_id != allStudentsId && dest_id != 'all') {
                     sendToId(senderUserName, dest_id, msg, stream);
                 }
             }
@@ -169,7 +172,7 @@ io.on('connection', (socket) => {
                 userIdToSocketsMap[userId] = socket;
             }
 
-            function handleReceivedMessage(msg, stream='') {
+            function handleReceivedMessage(msg, sendAsAnnouncement, stream='') {
                 const sender_userId = msg.userId;
                 const dest_sessions = msg.sessions;
                 const dest_id = msg.destId;
@@ -179,16 +182,19 @@ io.on('connection', (socket) => {
                 console.log(dest_sessions);
                 console.log(dest_id);
                 console.log(userType);
+                // console.log(sendAsAnnouncement);
 
                 if (userType == invilUserType && dest_sessions == 'all') {
                     dest_sessions = user.sessions;
-                } else if (!isValidUserIdAndSessions(socket, sender_userId, dest_sessions)) { 
+                } else if (!isValidUserIdAndSessions(socket, sender_userId, dest_sessions, sendAsAnnouncement)) { 
                     return; 
+                } else if (sendAsAnnouncement && userType == studentUserType) {
+                    return;
                 }
 
                 const senderUserName = getUserName(sender_userId);
                 if (userType == invilUserType) {
-                    sendMessageFromInvigilator(senderUserName, dest_id, dest_sessions, msg, stream);
+                    sendMessageFromInvigilator(senderUserName, dest_id, dest_sessions, msg, sendAsAnnouncement, stream);
                 } else {
                     sendMessageFromStudent(senderUserName, dest_id, dest_sessions, msg, stream);
                 }
@@ -199,14 +205,14 @@ io.on('connection', (socket) => {
             //     stream.pipe(fs.createWriteStream('example_name.avi'));
             // });
 
-            ss(socket).on(mediaMsgEvent, function(stream, msg) {
+            ss(socket).on(mediaMsgEvent, function(stream, msg, sendAsAnnouncement) {
                 // console.log('media message received', new Date(), stream);
-                handleReceivedMessage(msg, stream);
+                handleReceivedMessage(msg, sendAsAnnouncement, stream);
             });
             
             // User sends a message
-            socket.on(chatMsgEvent, (msg) => {
-                handleReceivedMessage(msg);
+            socket.on(chatMsgEvent, (msg, sendAsAnnouncement) => {
+                handleReceivedMessage(msg, sendAsAnnouncement);
             })
 
             socket.on('disconnect', () => {

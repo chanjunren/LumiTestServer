@@ -24,7 +24,7 @@ function isValidUser(userId, session) {
 
 invilToSessionIds = {'invil1': ['exampleSession', 'exampleSession2'], 'invil2': ['exampleSession']}
 function getInvilSessions(invilId) {
-    return invilToSessionIds['invil1'];
+    return invilToSessionIds[invilId];
 }
 
 //
