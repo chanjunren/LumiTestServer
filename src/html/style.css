@@ -1,0 +1,78 @@
+* {
+    font-family: sans-serif; /* Change your font family */
+    font-size: 18px;
+}
+
+body {
+    display: grid;
+    align-content: center;
+    padding: 20px;
+}
+
+#ongoing-label {
+    font-size: 25px;
+    font-weight: bold;
+}
+
+.control-container {
+    display:inline-flex;
+    justify-content: center;
+    align-items: center;
+
+}
+
+.control-container button{
+    margin: 5px;
+}
+
+#content-body {
+    display: inline-flex;
+    margin: 20px;
+}
+
+.ongoing-container {
+    padding: 20px;
+}
+
+.exam-list {
+    list-style-type: none;
+}
+
+.exam-table {
+    border-collapse: collapse;
+    margin: 25px 0;
+    font-size: 0.9em;
+    min-width: 400px;
+    border-radius: 5px 5px 0 0;
+    overflow: hidden;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+}
+
+.exam-table thead tr {
+    background-color: #009879;
+    color: #ffffff;
+    text-align: left;
+    font-weight: bold;
+}
+
+.exam-table th,
+.exam-table td {
+    padding: 12px 15px;
+}
+
+.exam-table tbody tr {
+    border-bottom: 1px solid #dddddd;
+}
+
+.exam-table tbody tr:nth-of-type(even) {
+background-color: #f3f3f3;
+}
+
+.exam-table tbody tr:last-of-type {
+border-bottom: 2px solid #009879;
+}
+
+.exam-table tbody tr.active-row {
+font-weight: bold;
+color: #009879;
+}

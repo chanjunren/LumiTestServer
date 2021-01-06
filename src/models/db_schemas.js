@@ -20,6 +20,11 @@ accountSchema.methods.overview = function() {
     console.log(overview);
 }
 
-const accountDetails = mongoose.model('Accounts', accountSchema);
+function getAccountsModel(connection) {
+    return connection.model('accounts', accountSchema);
 
-module.exports = {accountDetails, INVIL_TYPE, STU_TYPE}
+}
+
+const accountDetails = mongoose.model('accounts', accountSchema);
+// console.log('details: ', accountDetails);
+module.exports = {getAccountsModel, INVIL_TYPE, STU_TYPE}

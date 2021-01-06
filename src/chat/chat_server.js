@@ -10,6 +10,8 @@ const {userJoin, getCurrentUser, getUserName, getInvilSessions, getUserType, isV
 const { connected } = require('process');
 const { RSA_PKCS1_PADDING } = require('constants');
 
+const TEST_ALIAS = "cs3103-test-lol"
+
 http.listen(5000, () => {
     console.log("Listening on 5000");
 })
@@ -257,5 +259,4 @@ io.on('connection', (socket) => {
             socket.emit(chatErrorEvent, 'An error occured: ' + err);
         }
     })
-    
 })
