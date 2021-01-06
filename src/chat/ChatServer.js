@@ -14,6 +14,7 @@ http.listen(5000, () => {
     console.log("Listening on 5000");
 })
 
+var socketIds = new Set();
 var socketIdsToUserMap = {};
 var userIdToSocketsMap = {};
 var roomsToSocketIdsMap = {};
@@ -24,11 +25,19 @@ var path = require('path');
 const fs = require('fs')
 var ss = require('socket.io-stream');
 
+io.setMaxListeners(0);
+io.sockets.setMaxListeners(0);
+
 //Client connects
 io.on('connection', (socket) => {
     // User joins
+    socket.setMaxListeners(0);
+    if (socketIds.has(socket.id)) {
+        console.log(`socket ${socket.id} already connected.`);
+    }
     socket.on(joinEvent, ({userId, sessions}) => {
         console.log('socket ' + socket.id + ' connected.');
+        socketIds.add(this.id);
         try {
             function broadcastInfoToType(session, userType, infoType, info) {
                 socket.broadcast
@@ -180,10 +189,10 @@ io.on('connection', (socket) => {
                 const dest_id = msg.destId;
                 const userType = getUserType(sender_userId);
 
-                console.log(sender_userId);
-                console.log(dest_sessions);
-                console.log(dest_id);
-                console.log(userType);
+                // console.log(sender_userId);
+                // console.log(dest_sessions);
+                // console.log(dest_id);
+                // console.log(userType);
                 // console.log(sendAsAnnouncement);
 
                 if (userType == invilUserType && dest_sessions == 'all') {
@@ -218,8 +227,11 @@ io.on('connection', (socket) => {
             })
 
             socket.on('disconnect', () => {
+                console.log('socket ' + socket.id + ' disconnected.');
+                socketIds.delete(this.id);
                 var leftUser = socketIdsToUserMap[socket.id];
-                console.log('left', leftUser);
+                // console.log('left', leftUser);
+                if (leftUser == undefined) { return; }
                 // io.to(user.session).emit(infoEvent, session, 'userLeft', formatMessage(leftUser, getLeftMessage(leftUser.username)));
 
                 var infoType = 'userLeft'
