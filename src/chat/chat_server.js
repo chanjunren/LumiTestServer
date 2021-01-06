@@ -1,47 +1,61 @@
-const app = require('express')();
-const http = require('http').createServer(app);
-const io = require('socket.io')(http);
+// const app = require('express')();
+// const http = require('http').createServer(app);
+// const io = require('socket.io')(http);
 
 const {chatMsgEvent, mediaMsgEvent, joinEvent, infoEvent, populateUsersEvent, 
-       chatErrorEvent, studentUserType, invilUserType,
-       formatMessage, getWelcomeMessage, getJoinMessage, getLeftMessage, 
+       chatErrorEvent, formatMessage, getWelcomeMessage, getJoinMessage, getLeftMessage, 
        getInvalidUserMessage, allInvilsId, allStudentsId} = require('../globals/chat_globals');
-const {userJoin, getCurrentUser, getUserName, getInvilSessions, getUserType, isValidUser, isValidUserIdAndSessions} = require('../chat/user_utils');
-const { connected } = require('process');
-const { RSA_PKCS1_PADDING } = require('constants');
+const {userJoin, getCurrentUser, getUserName, getInvilSessions, getUserType, 
+       isValidUser, isValidUserIdAndSessions} = require('../chat/chat_utils');
+const { INVIL_TYPE, STU_TYPE } = require("../models/db_schemas.js");
+       // const { connected } = require('process');
+// const { RSA_PKCS1_PADDING } = require('constants');
 
-const TEST_ALIAS = "cs3103-test-lol"
+// http.listen(5000, () => {
+//     console.log("Listening on 5000");
+// })
 
-http.listen(5000, () => {
-    console.log("Listening on 5000");
-})
+// var path = require('path');
 
-var socketIds = new Set();
-var socketIdsToUserMap = {};
-var userIdToSocketsMap = {};
-var roomsToSocketIdsMap = {};
-var socketIdsToRoomsMap = {};
-
-var path = require('path');
-
-const fs = require('fs')
+// const fs = require('fs')
 var ss = require('socket.io-stream');
 
-io.setMaxListeners(0);
-io.sockets.setMaxListeners(0);
+// io.setMaxListeners(0);
+// io.sockets.setMaxListeners(0);
 
 //Client connects
-io.on('connection', (socket) => {
+// io.on('connection', (socket) => {
     // User joins
+
+async function configureChatSessionLogic(socket, chatGlobals) {
+    var chatSocketIds = chatGlobals.chatSocketIds;
+    var chatSocketIdsToUserMap = chatGlobals.chatSocketIdsToUserMap;
+    var chatUserIdToSocketsMap = chatGlobals.chatUserIdToSocketsMap;
+    var chatRoomsToSocketIdsMap = chatGlobals.chatRoomsToSocketIdsMap;
+    var chatSocketIdsToRoomsMap = chatGlobals.chatSocketIdsToRoomsMap;
+
+    // console.log(`Configuring session logic for ${socket.id}...`);
     socket.setMaxListeners(0);
-    if (socketIds.has(socket.id)) {
+    if (chatSocketIds.has(socket.id)) {
         console.log(`socket ${socket.id} already connected.`);
+        var user = chatSocketIdsToUserMap[socket.id];
+        for (i in user.sessions) {
+            var session = user.sessions[i]
+            setStudentConnectionStatus(session, user.userId, true);
+        }
     }
     socket.on(joinEvent, ({userId, sessions}) => {
         console.log('socket ' + socket.id + ' connected.');
-        socketIds.add(this.id);
+        for (i in sessions) {
+            var session = sessions[i];
+            setStudentConnectionStatus(session, userId, true);
+        }
+        chatSocketIds.add(this.id);
         try {
             function broadcastInfoToType(session, userType, infoType, info) {
+                if (infoType == 'userLeft') {
+                    console.log(infoEvent, session, userType, infoType, info)
+                };
                 socket.broadcast
                 .to(session + '_' + userType)
                 .emit(infoEvent, session, infoType, info);
@@ -55,11 +69,11 @@ io.on('connection', (socket) => {
                     .emit(chatMsgEvent, senderUserName, msg, sendAsAnnouncement);
                 } else {
                     var room_name = session + '_' + userType;
-                    if (roomsToSocketIdsMap[room_name] != undefined) {
-                        for (clientSocketId in roomsToSocketIdsMap[room_name]) {
+                    if (chatRoomsToSocketIdsMap[room_name] != undefined) {
+                        for (clientSocketId in chatRoomsToSocketIdsMap[room_name]) {
                             if (clientSocketId != socket.id) {
-                                var userId = socketIdsToUserMap[clientSocketId].userId;
-                                var clientSocket = userIdToSocketsMap[userId];
+                                var userId = chatSocketIdsToUserMap[clientSocketId].userId;
+                                var clientSocket = chatUserIdToSocketsMap[userId];
                                 var sendStream = ss.createStream();                    
                                 ss(clientSocket).emit(mediaMsgEvent, sendStream, senderUserName, msg, sendAsAnnouncement);
                                 stream.pipe(sendStream);
@@ -72,11 +86,12 @@ io.on('connection', (socket) => {
             function populateToType(socket, session, userType) {
                 var room_name = session + '_' + userType;
                 // var room = io.sockets.adapter.rooms[room_name];
-                // console.log('room', roomsToSocketIdsMap[room_name], room_name);
-                if (roomsToSocketIdsMap[room_name] != undefined) {
+                // console.log('chatRoomsToSocketIdsMap', chatRoomsToSocketIdsMap[room_name], chatRoomsToSocketIdsMap, room_name);
+                if (chatRoomsToSocketIdsMap[room_name] != undefined) {
                     var connectedUsers = [];
-                    for (clientSocketId in roomsToSocketIdsMap[room_name]) {
-                        var user = socketIdsToUserMap[clientSocketId];
+                    for (clientSocketId in chatRoomsToSocketIdsMap[room_name]) {
+                        // console.log('chatSocketIdsToUserMap', chatSocketIdsToUserMap[clientSocketId]);
+                        var user = chatSocketIdsToUserMap[clientSocketId];
                         connectedUsers.push(user);
                     }
                     // console.log('connected: ', connectedUsers);
@@ -97,7 +112,7 @@ io.on('connection', (socket) => {
             }
 
             function sendToId(senderUserName, dest_id, msg, stream='') {
-                var destinationSocket = userIdToSocketsMap[dest_id];
+                var destinationSocket = chatUserIdToSocketsMap[dest_id];
                 if (destinationSocket != undefined) {
                     // console.log('stream:', stream);                  
                     if (stream == '') {
@@ -110,60 +125,58 @@ io.on('connection', (socket) => {
                 }                
             }
 
-            function sendMessageFromStudent(senderUserName, dest_id, dest_sessions, msg, stream='') {
-                var dest_session = dest_sessions[0];
+            function sendMessageFromStudent(senderUserName, dest_id, session, msg, stream='') {
+                var dest_session = session;
                 if (dest_session != null) {
                     if (dest_id == allInvilsId) {
-                        broadcastMsgToType(senderUserName, dest_session, invilUserType, msg, false, stream);
-                    } else if (getUserType(dest_id) == invilUserType) {
+                        broadcastMsgToType(senderUserName, dest_session, INVIL_TYPE, msg, false, stream);
+                    } else if (getUserType(dest_session, dest_id) == INVIL_TYPE) {
                         sendToId(senderUserName, dest_id, msg, stream);
                     }
                 }
             }
 
-            function sendMessageFromInvigilator(senderUserName, dest_id, dest_sessions, msg, sendAsAnnouncement, stream='') {
+            function sendMessageFromInvigilator(senderUserName, dest_id, session, msg, sendAsAnnouncement, stream='') {
                 if (sendAsAnnouncement) { dest_id = 'all'; }
                 if (dest_id == allInvilsId || dest_id == 'all') {
-                    for (i in dest_sessions) {
-                        var session = dest_sessions[i];
-                        broadcastMsgToType(senderUserName, session, invilUserType, msg, sendAsAnnouncement, stream);
-                    }
+                    broadcastMsgToType(senderUserName, session, INVIL_TYPE, msg, sendAsAnnouncement, stream);
                 } 
                 if (dest_id == allStudentsId || dest_id == 'all') {
-                    for (i in dest_sessions) {
-                        var session = dest_sessions[i]
-                        broadcastMsgToType(senderUserName, session, studentUserType, msg, sendAsAnnouncement, stream);
-                    }
+                    broadcastMsgToType(senderUserName, session, STU_TYPE, msg, sendAsAnnouncement, stream);
                 }
                 if (dest_id != allInvilsId && dest_id != allStudentsId && dest_id != 'all') {
                     sendToId(senderUserName, dest_id, msg, stream);
                 }
             }
 
-            var userType = getUserType(userId);
-            if (userType != invilUserType && Object.keys(sessions).length > 1) {
-                socket.emit(chatErrorEvent, getInvalidUserMessage(userId, sessions));                
-            }
-            if (userType == invilUserType && (sessions == null || Object.keys(sessions).length == 0)) {
-                sessions = getInvilSessions(userId);
-            }
+            // var userType = getUserType(userId);
+            // if (userType != INVIL_TYPE && Object.keys(sessions).length > 1) {
+            //     socket.emit(chatErrorEvent, getInvalidUserMessage(userId, sessions));                
+            // }
+            // if (userType == INVIL_TYPE && (sessions == null || Object.keys(sessions).length == 0)) {
+            //     sessions = getInvilSessions(userId);
+            // }
             if (!isValidUserIdAndSessions(socket, userId, sessions)) { return; }
 
             const user = userJoin(socket.id, userId, sessions);
-            socketIdsToUserMap[socket.id] = user;
+            chatSocketIdsToUserMap[socket.id] = user;
             for (i in sessions) {
-                session = sessions[i];
+                var session = sessions[i];
+                var userType = getUserType(session, userId);
                 var room_name = session + '_' + userType;
                 socket.emit(infoEvent, session, 'welcome', formatMessage(user, getWelcomeMessage(session)));
                 socket.join(room_name);
-                if (roomsToSocketIdsMap[room_name] == undefined) {
-                    roomsToSocketIdsMap[room_name] = {};
+                if (chatRoomsToSocketIdsMap[room_name] == undefined) {
+                    chatRoomsToSocketIdsMap[room_name] = {};
                 }
-                if (socketIdsToRoomsMap[socket.id] == undefined) {
-                    socketIdsToRoomsMap[socket.id] = {};
+                if (chatSocketIdsToRoomsMap[socket.id] == undefined) {
+                    chatSocketIdsToRoomsMap[socket.id] = {};
                 }
-                roomsToSocketIdsMap[room_name][socket.id] = 1;
-                socketIdsToRoomsMap[socket.id][room_name] = 1;
+                chatRoomsToSocketIdsMap[room_name][socket.id] = 1;
+                chatSocketIdsToRoomsMap[socket.id][room_name] = 1;
+
+                // console.log('Updated chatRoomsToSocketIdsMap', chatRoomsToSocketIdsMap[room_name], chatRoomsToSocketIdsMap)
+                // console.log('Updated chatSocketIdsToRoomsMap', chatSocketIdsToRoomsMap[socket.id], chatSocketIdsToRoomsMap)
 
                 // console.log(Object.keys(roomsToSocketIdsMap[room_name]).length, room_name);
                 // console.log(Object.keys(socketIdsToRoomsMap[socket]).length, room_name);
@@ -171,45 +184,49 @@ io.on('connection', (socket) => {
                 // console.log(socketIdsToRoomsMap[socket][room_name], room_name);
 
                 // console.log('populating invilUser')
-                populateToType(socket, session, invilUserType);
-                if (userType == invilUserType) {
+                populateToType(socket, session, INVIL_TYPE);
+                if (userType == INVIL_TYPE) {
                     // console.log('populating studentUser')
-                    populateToType(socket, session, studentUserType);
+                    populateToType(socket, session, STU_TYPE);
                 }
                 var infoType = 'userJoined'
                 var info = formatMessage(user, getJoinMessage(user.username));
-                broadcastInfoToType(session, invilUserType, infoType, info);
-                if (userType == invilUserType) {
-                    broadcastInfoToType(session, studentUserType, infoType, info);
+                broadcastInfoToType(session, INVIL_TYPE, infoType, info);
+                if (userType == INVIL_TYPE) {
+                    broadcastInfoToType(session, STU_TYPE, infoType, info);
                 }
-                userIdToSocketsMap[userId] = socket;
+                chatUserIdToSocketsMap[userId] = socket;
             }
 
             function handleReceivedMessage(msg, sendAsAnnouncement, stream='') {
                 const sender_userId = msg.userId;
                 const dest_sessions = msg.sessions;
                 const dest_id = msg.destId;
-                const userType = getUserType(sender_userId);
-
-                // console.log(sender_userId);
-                // console.log(dest_sessions);
-                // console.log(dest_id);
-                // console.log(userType);
-                // console.log(sendAsAnnouncement);
-
-                if (userType == invilUserType && dest_sessions == 'all') {
-                    dest_sessions = user.sessions;
-                } else if (!isValidUserIdAndSessions(socket, sender_userId, dest_sessions, sendAsAnnouncement)) { 
+                if (!isValidUserIdAndSessions(socket, sender_userId, dest_sessions, sendAsAnnouncement)) { 
                     return; 
-                } else if (sendAsAnnouncement && userType == studentUserType) {
-                    return;
                 }
+                for (i in dest_sessions) {
+                    var session = dest_sessions[i];
+                    const userType = getUserType(session, sender_userId);
 
-                const senderUserName = getUserName(sender_userId);
-                if (userType == invilUserType) {
-                    sendMessageFromInvigilator(senderUserName, dest_id, dest_sessions, msg, sendAsAnnouncement, stream);
-                } else {
-                    sendMessageFromStudent(senderUserName, dest_id, dest_sessions, msg, stream);
+                    // console.log(sender_userId);
+                    // console.log(dest_sessions);
+                    // console.log(dest_id);
+                    // console.log(userType);
+                    // console.log(sendAsAnnouncement);
+
+                    if (userType == INVIL_TYPE && dest_sessions == 'all') {
+                        dest_sessions = user.sessions;
+                    } else if (sendAsAnnouncement && userType == STU_TYPE) {
+                        continue;
+                    }
+
+                    const senderUserName = getUserName(sender_userId);
+                    if (userType == INVIL_TYPE) {
+                        sendMessageFromInvigilator(senderUserName, dest_id, session, msg, sendAsAnnouncement, stream);
+                    } else {
+                        sendMessageFromStudent(senderUserName, dest_id, session, msg, stream);
+                    }
                 }
                     // io.to(user.session).emit(chatMsgEvent, msg);   
             }
@@ -230,33 +247,40 @@ io.on('connection', (socket) => {
 
             socket.on('disconnect', () => {
                 console.log('socket ' + socket.id + ' disconnected.');
-                socketIds.delete(this.id);
-                var leftUser = socketIdsToUserMap[socket.id];
-                // console.log('left', leftUser);
+                chatSocketIds.delete(this.id);
+                var leftUser = chatSocketIdsToUserMap[socket.id];
+                console.log('left', leftUser);
                 if (leftUser == undefined) { return; }
                 // io.to(user.session).emit(infoEvent, session, 'userLeft', formatMessage(leftUser, getLeftMessage(leftUser.username)));
 
                 var infoType = 'userLeft'
                 var info = formatMessage(leftUser, getLeftMessage(leftUser.username));
-                broadcastInfoToType(session, invilUserType, infoType, info);
-                if (userType == invilUserType) {
-                    broadcastInfoToType(session, studentUserType, infoType, info);
+                for (i in leftUser.sessions) {
+                    var session = leftUser.sessions[i]
+                    broadcastInfoToType(session, INVIL_TYPE, infoType, info);
+                    if (userType == INVIL_TYPE) {
+                        broadcastInfoToType(session, STU_TYPE, infoType, info);
+                    }
+                    setStudentConnectionStatus(session, leftUser.userId, false);
                 }
-                delete socketIdsToUserMap[socket.id];
-                delete userIdToSocketsMap[leftUser.userId];
-                var rooms = socketIdsToRoomsMap[socket.id];
+
+                delete chatSocketIdsToUserMap[socket.id];
+                delete chatUserIdToSocketsMap[leftUser.userId];
+                var rooms = chatSocketIdsToRoomsMap[socket.id];
                 if (rooms != undefined) {
                     for (room in rooms) {
-                        if (roomsToSocketIdsMap[room] != undefined) {
-                            delete roomsToSocketIdsMap[room][socket.id];
+                        if (chatRoomsToSocketIdsMap[room] != undefined) {
+                            delete chatRoomsToSocketIdsMap[room][socket.id];
                         }
                     }
                 }
-                delete socketIdsToRoomsMap[socket.id];
+                delete chatSocketIdsToRoomsMap[socket.id];
             })
         } catch (err) {
             console.log(err);
             socket.emit(chatErrorEvent, 'An error occured: ' + err);
         }
     })
-})
+};
+
+module.exports = {configureChatSessionLogic};

@@ -3,3 +3,4 @@ node_modules
 src/utils
 src/db/dbOutput/*
 test_media.avi
+src/archive

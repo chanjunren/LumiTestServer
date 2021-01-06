@@ -2,8 +2,13 @@ const expressApp = require('express')();
 const http = require('http').createServer(expressApp);
 const io = require('socket.io')(http);
 
+io.setMaxListeners(0);
+io.sockets.setMaxListeners(0);
+
 const {initiateExam} = require('../session_logic/exam_manager');
-const {configureSessionLogic} = require('../session_logic/session_socket_logic');
+const {configureSessionLogic, setStudentConnectionStatus} = require('../session_logic/session_socket_logic');
+const {configureChatSessionLogic} = require('../chat/chat_server')
+
 const {PORT} = require('../globals/connection');
 
 const initiateExamBtn = document.getElementById("initiate-btn");
@@ -12,6 +17,14 @@ const examTables = document.getElementById("exam-tables");
 const output = document.getElementById("output-display");
 
 const managerMap = new Map(); // Array of ExamManagers
+
+const chatGlobals = {
+  chatSocketIds: new Set(),
+  chatSocketIdsToUserMap: {},
+  chatUserIdToSocketsMap: {},
+  chatRoomsToSocketIdsMap: {},
+  chatSocketIdsToRoomsMap: {},
+}
 
 initiateExamBtn.addEventListener("click", async function() {
     var testAlias = testAliasInput.value;
@@ -62,6 +75,7 @@ http.listen(PORT, () => {
   console.log("Listening on ", PORT);
 })
 
-io.once('connection', socket => {
+io.on('connection', socket => {
   configureSessionLogic(socket);
+  configureChatSessionLogic(socket, chatGlobals);
 })

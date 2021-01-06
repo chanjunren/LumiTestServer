@@ -1,7 +1,16 @@
 const {JOIN_SESSION_REQ, LOGIN_RESP} = require('../globals/connection');
 const {INVIL_TYPE} = require('../models/db_schemas');
 
-function configureSessionLogic(socket) {
+function setStudentConnectionStatus(testAlias, id, studentIsConnected) {
+    var td = document.getElementById(`${testAlias}-${id}-status`);
+    console.log(td, `${testAlias}-${id}-status`);
+    if (td == undefined) { return; }
+    var color = studentIsConnected ? "green" : "red";
+    td.style = `color: ${color}; font-weight: bold`;
+    td.innerText = studentIsConnected ? "True" : "False";
+}
+
+async function configureSessionLogic(socket) {
     socket.on(JOIN_SESSION_REQ, msg => {
         console.log("Msg recvd: ", msg);
         const {testAlias, id, pw} = msg;
@@ -18,13 +27,12 @@ function configureSessionLogic(socket) {
             return socket.emit(LOGIN_RESP, "INVALID_PW");
         }
 
-        var td = document.getElementById(`${testAlias}-${id}-status`);
-        td.style = "color: green; font-weight: bold";
-        td.innerText = "True"
+        setStudentConnectionStatus(testAlias, id, true);
 
-        return manager.masterList.get(id).type == INVIL_TYPE ? socket.emit(LOGIN_RESP, "INVIL_LOGIN_OK")
-            : socket.emit("STU_LOGIN_OK");
+        return manager.masterList.get(id).type == INVIL_TYPE 
+               ? socket.emit(LOGIN_RESP, "INVIL_LOGIN_OK")
+               : socket.emit(LOGIN_RESP, "STU_LOGIN_OK");
     })
 }
 
-module.exports = {configureSessionLogic};
+module.exports = {configureSessionLogic, setStudentConnectionStatus};

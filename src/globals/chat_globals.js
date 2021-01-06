@@ -10,8 +10,8 @@ const chatErrorEvent = 'chatError';
 const allInvilsId = 'all_invils';
 const allStudentsId = 'all_students';
 
-const invilUserType = 'invil'
-const studentUserType = 'student'
+// const invilUserType = 'invil'
+// const studentUserType = 'student'
 
 function getWelcomeMessage(testAlias) {
     return `Connected to ${testAlias}.`;
@@ -39,6 +39,5 @@ function formatMessage(user, msg) {
 }
 
 module.exports = {chatUrl, joinEvent, chatMsgEvent, chatErrorEvent, mediaMsgEvent, infoEvent, 
-                  populateUsersEvent, invilUserType, studentUserType,
-                  formatMessage, getWelcomeMessage, getJoinMessage, getLeftMessage, 
+                  populateUsersEvent, formatMessage, getWelcomeMessage, getJoinMessage, getLeftMessage, 
                   getInvalidUserMessage, allInvilsId, allStudentsId};
