@@ -33,6 +33,7 @@ async function configureChatSessionLogic(socket, chatGlobals) {
     var chatUserIdToSocketsMap = chatGlobals.chatUserIdToSocketsMap;
     var chatRoomsToSocketIdsMap = chatGlobals.chatRoomsToSocketIdsMap;
     var chatSocketIdsToRoomsMap = chatGlobals.chatSocketIdsToRoomsMap;
+    var addedChatSocketEventListeners = chatGlobals.addedChatSocketEventListeners;
 
     // console.log(`Configuring session logic for ${socket.id}...`);
     socket.setMaxListeners(0);
@@ -45,16 +46,18 @@ async function configureChatSessionLogic(socket, chatGlobals) {
         }
     }
     socket.on(joinEvent, ({userId, sessions}) => {
-        console.log('socket ' + socket.id + ' connected.');
-        for (i in sessions) {
-            var session = sessions[i];
-            setStudentConnectionStatus(session, userId, true);
-        }
-        chatSocketIds.add(this.id);
+        // if (chatSocketIds.has(socket.id)) {
+        //     console.log(`socket ${socket.id} already joined.`);
+        //     return;
+        // }
+        // console.log('socket ' + socket.id + ' connected.');
+
+        chatSocketIds.add(socket.id);
+        // console.log('chatSocketId added:', chatSocketIds);
         try {
             function broadcastInfoToType(session, userType, infoType, info) {
                 if (infoType == 'userLeft') {
-                    console.log(infoEvent, session, userType, infoType, info)
+                    // console.log(infoEvent, session, userType, infoType, info)
                 };
                 socket.broadcast
                 .to(session + '_' + userType)
@@ -156,15 +159,22 @@ async function configureChatSessionLogic(socket, chatGlobals) {
             // if (userType == INVIL_TYPE && (sessions == null || Object.keys(sessions).length == 0)) {
             //     sessions = getInvilSessions(userId);
             // }
-            if (!isValidUserIdAndSessions(socket, userId, sessions)) { return; }
+            if (!isValidUserIdAndSessions(socket, userId, sessions)) { 
+                return; 
+            }
 
             const user = userJoin(socket.id, userId, sessions);
             chatSocketIdsToUserMap[socket.id] = user;
+            
             for (i in sessions) {
                 var session = sessions[i];
                 var userType = getUserType(session, userId);
                 var room_name = session + '_' + userType;
+
+                setStudentConnectionStatus(session, userId, true);
+
                 socket.emit(infoEvent, session, 'welcome', formatMessage(user, getWelcomeMessage(session)));
+                console.log(`${socket.id}: Successfully joined ${session}.`)
                 socket.join(room_name);
                 if (chatRoomsToSocketIdsMap[room_name] == undefined) {
                     chatRoomsToSocketIdsMap[room_name] = {};
@@ -205,7 +215,9 @@ async function configureChatSessionLogic(socket, chatGlobals) {
                 if (!isValidUserIdAndSessions(socket, sender_userId, dest_sessions, sendAsAnnouncement)) { 
                     return; 
                 }
+                // console.log('dest_sessions', dest_sessions);
                 for (i in dest_sessions) {
+                    // console.log('session', dest_sessions[i]);
                     var session = dest_sessions[i];
                     const userType = getUserType(session, sender_userId);
 
@@ -235,35 +247,9 @@ async function configureChatSessionLogic(socket, chatGlobals) {
             //     stream.pipe(fs.createWriteStream('example_name.avi'));
             // });
 
-            ss(socket).on(mediaMsgEvent, function(stream, msg, sendAsAnnouncement) {
-                // console.log('media message received', new Date(), stream);
-                handleReceivedMessage(msg, sendAsAnnouncement, stream);
-            });
-            
-            // User sends a message
-            socket.on(chatMsgEvent, (msg, sendAsAnnouncement) => {
-                handleReceivedMessage(msg, sendAsAnnouncement);
-            })
-
-            socket.on('disconnect', () => {
-                console.log('socket ' + socket.id + ' disconnected.');
-                chatSocketIds.delete(this.id);
-                var leftUser = chatSocketIdsToUserMap[socket.id];
-                console.log('left', leftUser);
-                if (leftUser == undefined) { return; }
+            function removeUserSocket(socket, leftUser) {
+                chatSocketIds.delete(socket.id);
                 // io.to(user.session).emit(infoEvent, session, 'userLeft', formatMessage(leftUser, getLeftMessage(leftUser.username)));
-
-                var infoType = 'userLeft'
-                var info = formatMessage(leftUser, getLeftMessage(leftUser.username));
-                for (i in leftUser.sessions) {
-                    var session = leftUser.sessions[i]
-                    broadcastInfoToType(session, INVIL_TYPE, infoType, info);
-                    if (userType == INVIL_TYPE) {
-                        broadcastInfoToType(session, STU_TYPE, infoType, info);
-                    }
-                    setStudentConnectionStatus(session, leftUser.userId, false);
-                }
-
                 delete chatSocketIdsToUserMap[socket.id];
                 delete chatUserIdToSocketsMap[leftUser.userId];
                 var rooms = chatSocketIdsToRoomsMap[socket.id];
@@ -275,7 +261,63 @@ async function configureChatSessionLogic(socket, chatGlobals) {
                     }
                 }
                 delete chatSocketIdsToRoomsMap[socket.id];
-            })
+            }
+
+            function ensureAddedSocketEventListenersExist(socketId) {
+                if (addedChatSocketEventListeners[socketId] == undefined) {
+                    addedChatSocketEventListeners[socketId] = {
+                        mediaMessageEvent: false,
+                        messageEvent: false,
+                        disconnectEvent: false,
+                    }
+                }
+            }
+
+            if (addedChatSocketEventListeners[socket.id] != undefined) {
+                console.log(`${socket.id}: socket successfully joined.`);
+            }
+
+            if (addedChatSocketEventListeners[socket.id] == undefined || !addedChatSocketEventListeners[socket.id].mediaMessageEvent) {
+                ss(socket).on(mediaMsgEvent, function(stream, msg, sendAsAnnouncement) {
+                    console.log(`${socket.id}: Media stream received:`, msg);
+                    handleReceivedMessage(msg, sendAsAnnouncement, stream);
+                });
+                ensureAddedSocketEventListenersExist(socket.id);
+                addedChatSocketEventListeners[socket.id].mediaMessageEvent = true;
+            }
+            
+            // User sends a message
+            if (addedChatSocketEventListeners[socket.id] == undefined || !addedChatSocketEventListeners[socket.id].messageEvent) {
+                socket.on(chatMsgEvent, (msg, sendAsAnnouncement) => {
+                    console.log(`${socket.id}: Message received:`, msg);
+                    handleReceivedMessage(msg, sendAsAnnouncement);
+                })
+                ensureAddedSocketEventListenersExist(socket.id);
+                addedChatSocketEventListeners[socket.id].messageEvent = true;
+            }
+
+            if (addedChatSocketEventListeners[socket.id] == undefined || !addedChatSocketEventListeners[socket.id].disconnectEvent) {
+                socket.on('disconnect', () => {
+                    console.log('socket ' + socket.id + ' disconnected.');
+                    var leftUser = chatSocketIdsToUserMap[socket.id];
+                    console.log('user left:', leftUser);
+                    if (leftUser == undefined) { return; }
+
+                    var infoType = 'userLeft'
+                    var info = formatMessage(leftUser, getLeftMessage(leftUser.username));
+                    for (i in leftUser.sessions) {
+                        var session = leftUser.sessions[i]
+                        broadcastInfoToType(session, INVIL_TYPE, infoType, info);
+                        if (userType == INVIL_TYPE) {
+                            broadcastInfoToType(session, STU_TYPE, infoType, info);
+                        }
+                        setStudentConnectionStatus(session, leftUser.userId, false);
+                    }
+                    removeUserSocket(socket, leftUser);
+                })
+                ensureAddedSocketEventListenersExist(socket.id);
+                addedChatSocketEventListeners[socket.id].disconnectEvent = true;
+            }
         } catch (err) {
             console.log(err);
             socket.emit(chatErrorEvent, 'An error occured: ' + err);

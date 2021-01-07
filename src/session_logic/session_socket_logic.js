@@ -3,7 +3,7 @@ const {INVIL_TYPE} = require('../models/db_schemas');
 
 function setStudentConnectionStatus(testAlias, id, studentIsConnected) {
     var td = document.getElementById(`${testAlias}-${id}-status`);
-    console.log(td, `${testAlias}-${id}-status`);
+    // console.log(td, `${testAlias}-${id}-status`);
     if (td == undefined) { return; }
     var color = studentIsConnected ? "green" : "red";
     td.style = `color: ${color}; font-weight: bold`;

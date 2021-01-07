@@ -34,10 +34,10 @@ function getInvilSessions(invilId) {
 //
 
 const chatErrorEvent = 'chatError';
+// const requestAuthenticationError = 'requestAuthenticationError'
 
 function getInvalidUserMessage(userId, session) {
-    return (`Unable to validate user ID ${userId} and session ${session}. `
-            + 'Please contact system administrator before restarting the application.');
+    return (`Unable to validate user credentials for the session`);
 }
 
 function isValidUserIdAndSessions(socket, userId, sessions) {
@@ -45,6 +45,7 @@ function isValidUserIdAndSessions(socket, userId, sessions) {
     for (i in sessions) {
         if (!isValidUser(userId, sessions[i])) {
             socket.emit(chatErrorEvent, getInvalidUserMessage(userId, sessions[i]));
+            // console.log(`${socket.id} failed to authenticate.`)
             isValid = false;
         }
     }

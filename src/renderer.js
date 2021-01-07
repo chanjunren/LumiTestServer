@@ -24,21 +24,29 @@ const chatGlobals = {
   chatUserIdToSocketsMap: {},
   chatRoomsToSocketIdsMap: {},
   chatSocketIdsToRoomsMap: {},
+  addedChatSocketEventListeners: {}
 }
 
-initiateExamBtn.addEventListener("click", async function() {
-    var testAlias = testAliasInput.value;
-    testAliasInput.value = "";
-    output.innerText = "";
-    try {
-      await initiateExam(testAlias, managerMap);
+initiateExamBtn.addEventListener("click", runInitiateExamProcess);
+testAliasInput.addEventListener("keydown", (e) => {
+  if (e.keyCode == 13) {
+    runInitiateExamProcess();
+  }
+});
 
-      outputExam(testAlias);
-    } catch (e) {
-      outputErrorMsg(e);
-    }
-    
-})
+async function runInitiateExamProcess() {
+  var testAlias = testAliasInput.value;
+  if (testAlias.trim() == '') { return; }
+  testAliasInput.value = "";
+  output.innerText = "";
+  try {
+    await initiateExam(testAlias, managerMap);
+
+    outputExam(testAlias);
+  } catch (e) {
+    outputErrorMsg(e);
+  }
+}
 
 function outputErrorMsg(msg) {
   output.innerText = msg;

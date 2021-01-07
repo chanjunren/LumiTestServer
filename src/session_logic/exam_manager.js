@@ -56,18 +56,18 @@ function showStatsOf(examManager) {
     console.log("TEST: ", examManager.testAlias);
     console.log("Master List:", examManager.masterList);
 
-    function mapToObj(map){
-        const obj = {}
-        for (let [k,v] of map)
-          obj[k] = v
-        return obj
-    }
+    // function mapToObj(map){
+    //     const obj = {}
+    //     for (let [k,v] of map)
+    //       obj[k] = v
+    //     return obj
+    // }
 
-    const myJson = {};
-    myJson.masterList = mapToObj(examManager.masterList);
-    const json = JSON.stringify(myJson);
+    // const myJson = {};
+    // myJson.masterList = mapToObj(examManager.masterList);
+    // const json = JSON.stringify(myJson);
       
-    console.log(json)
+    // console.log(json)
     // console.log("Master List:", examManager.masterList);    
 }
 
