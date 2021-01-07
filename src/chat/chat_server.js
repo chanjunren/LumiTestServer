@@ -8,7 +8,9 @@ const {chatMsgEvent, mediaMsgEvent, joinEvent, infoEvent, populateUsersEvent,
 const {userJoin, getCurrentUser, getUserName, getInvilSessions, getUserType, 
        isValidUser, isValidUserIdAndSessions} = require('../chat/chat_utils');
 const { INVIL_TYPE, STU_TYPE } = require("../models/db_schemas.js");
-       // const { connected } = require('process');
+const { addRecordingSocketListeners } = require('../chat/recording_utils');
+
+// const { connected } = require('process');
 // const { RSA_PKCS1_PADDING } = require('constants');
 
 // http.listen(5000, () => {
@@ -64,12 +66,13 @@ async function configureChatSessionLogic(socket, chatGlobals) {
                 .emit(infoEvent, session, infoType, info);
             }
 
-            function broadcastMsgToType(senderUserName, session, userType, msg, sendAsAnnouncement, stream='') {
+            function broadcastMsgToType(senderUserName, session, userType, msg, sendAsAnnouncement, stream='', examStartInstruction = '') {
                 // console.log('stream:', stream);
                 if (stream == '') {
+                    var eventToEmit = examStartInstruction == '' ? chatMsgEvent : examStartInstruction;
                     socket.broadcast
                     .to(session + '_' + userType)
-                    .emit(chatMsgEvent, senderUserName, msg, sendAsAnnouncement);
+                    .emit(eventToEmit, senderUserName, msg, sendAsAnnouncement);
                 } else {
                     var room_name = session + '_' + userType;
                     if (chatRoomsToSocketIdsMap[room_name] != undefined) {
@@ -114,12 +117,13 @@ async function configureChatSessionLogic(socket, chatGlobals) {
 
             }
 
-            function sendToId(senderUserName, dest_id, msg, stream='') {
+            function sendToId(senderUserName, dest_id, msg, stream='', examStartInstruction='') {
                 var destinationSocket = chatUserIdToSocketsMap[dest_id];
                 if (destinationSocket != undefined) {
                     // console.log('stream:', stream);                  
                     if (stream == '') {
-                        destinationSocket.emit(chatMsgEvent, senderUserName, msg);
+                        var eventToEmit = examStartInstruction == '' ? chatMsgEvent : examStartInstruction;
+                        destinationSocket.emit(eventToEmit, senderUserName, msg);
                     } else {
                         var sendStream = ss.createStream();  
                         ss(destinationSocket).emit(mediaMsgEvent, sendStream, senderUserName, msg);
@@ -139,16 +143,17 @@ async function configureChatSessionLogic(socket, chatGlobals) {
                 }
             }
 
-            function sendMessageFromInvigilator(senderUserName, dest_id, session, msg, sendAsAnnouncement, stream='') {
+            function sendMessageFromInvigilator(senderUserName, dest_id, session, msg, sendAsAnnouncement, stream='', examStartInstruction='') {
                 if (sendAsAnnouncement) { dest_id = 'all'; }
                 if (dest_id == allInvilsId || dest_id == 'all') {
-                    broadcastMsgToType(senderUserName, session, INVIL_TYPE, msg, sendAsAnnouncement, stream);
+                    if (examStartInstruction != '') { return; }
+                    broadcastMsgToType(senderUserName, session, INVIL_TYPE, msg, sendAsAnnouncement, stream, examStartInstruction);
                 } 
                 if (dest_id == allStudentsId || dest_id == 'all') {
-                    broadcastMsgToType(senderUserName, session, STU_TYPE, msg, sendAsAnnouncement, stream);
+                    broadcastMsgToType(senderUserName, session, STU_TYPE, msg, sendAsAnnouncement, stream, examStartInstruction);
                 }
                 if (dest_id != allInvilsId && dest_id != allStudentsId && dest_id != 'all') {
-                    sendToId(senderUserName, dest_id, msg, stream);
+                    sendToId(senderUserName, dest_id, msg, stream, examStartInstruction);
                 }
             }
 
@@ -208,7 +213,7 @@ async function configureChatSessionLogic(socket, chatGlobals) {
                 chatUserIdToSocketsMap[userId] = socket;
             }
 
-            function handleReceivedMessage(msg, sendAsAnnouncement, stream='') {
+            function handleReceivedMessage(msg, sendAsAnnouncement, stream='', examStartInstruction='') {
                 const sender_userId = msg.userId;
                 const dest_sessions = msg.sessions;
                 const dest_id = msg.destId;
@@ -231,11 +236,13 @@ async function configureChatSessionLogic(socket, chatGlobals) {
                         dest_sessions = user.sessions;
                     } else if (sendAsAnnouncement && userType == STU_TYPE) {
                         continue;
+                    } else if (examStartInstruction != '' && userType == STU_TYPE) {
+                        continue;
                     }
 
                     const senderUserName = getUserName(sender_userId);
                     if (userType == INVIL_TYPE) {
-                        sendMessageFromInvigilator(senderUserName, dest_id, session, msg, sendAsAnnouncement, stream);
+                        sendMessageFromInvigilator(senderUserName, dest_id, session, msg, sendAsAnnouncement, stream, examStartInstruction);
                     } else {
                         sendMessageFromStudent(senderUserName, dest_id, session, msg, stream);
                     }
@@ -269,12 +276,19 @@ async function configureChatSessionLogic(socket, chatGlobals) {
                         mediaMessageEvent: false,
                         messageEvent: false,
                         disconnectEvent: false,
+                        recordingEvent: false,
                     }
                 }
             }
 
             if (addedChatSocketEventListeners[socket.id] != undefined) {
                 console.log(`${socket.id}: socket successfully joined.`);
+            }
+
+            if (addedChatSocketEventListeners[socket.id] == undefined || !addedChatSocketEventListeners[socket.id].recordingEvent) {
+                addRecordingSocketListeners(socket, handleReceivedMessage);
+                ensureAddedSocketEventListenersExist(socket.id);
+                addedChatSocketEventListeners[socket.id].recordingEvent = true;
             }
 
             if (addedChatSocketEventListeners[socket.id] == undefined || !addedChatSocketEventListeners[socket.id].mediaMessageEvent) {
