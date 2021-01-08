@@ -1,6 +1,7 @@
-const { INVIL_TYPE } = require("../models/db_schemas");
+const { STU_TYPE, INVIL_TYPE } = require("../models/db_schemas");
 const { studentIdAndSessionEvent, examStartInstruction, examStopInstruction } = require('../globals/recording_globals');
 const { getUserType, isValidUserIdAndSessions } = require('../chat/chat_utils');
+const { populateUsersEvent } = require('../globals/chat_globals');
 
 function addRecordingSocketListeners(socket, handleReceivedMessage) {
     socket.on(studentIdAndSessionEvent, function(msg) {
@@ -36,4 +37,23 @@ function addRecordingSocketListeners(socket, handleReceivedMessage) {
     });
 }
 
-module.exports = { addRecordingSocketListeners };
+function addPopulationSocketListeners(socket, sendConnectedUsersIn) {
+    socket.on(populateUsersEvent, function(msg) {
+        const sender_userId = msg.userId;
+        const dest_sessions = msg.sessions;
+        const dest_id = msg.destId;
+        if (!isValidUserIdAndSessions(socket, sender_userId, dest_sessions, '')) { 
+            return; 
+        }
+        var session = dest_sessions[0];
+        const userType = getUserType(session, sender_userId);
+        if (userType == INVIL_TYPE) {
+            // console.log('populating studentUser')
+            sendConnectedUsersIn(socket, INVIL_TYPE, STU_TYPE);
+        } else {
+            sendConnectedUsersIn(socket, INVIL_TYPE)
+        }
+    })
+}
+
+module.exports = { addRecordingSocketListeners, addPopulationSocketListeners };

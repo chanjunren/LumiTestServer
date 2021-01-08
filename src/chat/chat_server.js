@@ -8,7 +8,7 @@ const {chatMsgEvent, mediaMsgEvent, joinEvent, infoEvent, populateUsersEvent,
 const {userJoin, getCurrentUser, getUserName, getInvilSessions, getUserType, 
        isValidUser, isValidUserIdAndSessions} = require('../chat/chat_utils');
 const { INVIL_TYPE, STU_TYPE } = require("../models/db_schemas.js");
-const { addRecordingSocketListeners } = require('../chat/recording_utils');
+const { addRecordingSocketListeners, addPopulationSocketListeners } = require('../chat/recording_utils');
 
 // const { connected } = require('process');
 // const { RSA_PKCS1_PADDING } = require('constants');
@@ -87,6 +87,25 @@ async function configureChatSessionLogic(socket, chatGlobals) {
                         }
                     }
                 }
+            }
+
+            function sendConnectedUsersIn(socket, ...userTypes) {
+                var connectedUsers = [];
+                for (const i in userTypes) {
+                    userType = userTypes[i];
+                    var room_name = session + '_' + userType;
+                    // var room = io.sockets.adapter.rooms[room_name];
+                    // console.log('chatRoomsToSocketIdsMap', chatRoomsToSocketIdsMap[room_name], chatRoomsToSocketIdsMap, room_name);
+                    if (chatRoomsToSocketIdsMap[room_name] != undefined) {
+                        for (clientSocketId in chatRoomsToSocketIdsMap[room_name]) {
+                            // console.log('chatSocketIdsToUserMap', chatSocketIdsToUserMap[clientSocketId]);
+                            var user = chatSocketIdsToUserMap[clientSocketId];
+                            connectedUsers.push(user);
+                        }
+                        // console.log('connected: ', connectedUsers);
+                    }
+                }
+                socket.emit(populateUsersEvent, connectedUsers);
             }
 
             function populateToType(socket, session, userType) {
@@ -199,11 +218,11 @@ async function configureChatSessionLogic(socket, chatGlobals) {
                 // console.log(socketIdsToRoomsMap[socket][room_name], room_name);
 
                 // console.log('populating invilUser')
-                populateToType(socket, session, INVIL_TYPE);
-                if (userType == INVIL_TYPE) {
-                    // console.log('populating studentUser')
-                    populateToType(socket, session, STU_TYPE);
-                }
+                // populateToType(socket, session, INVIL_TYPE);
+                // if (userType == INVIL_TYPE) {
+                //     // console.log('populating studentUser')
+                //     populateToType(socket, session, STU_TYPE);
+                // }
                 var infoType = 'userJoined'
                 var info = formatMessage(user, getJoinMessage(user.username));
                 broadcastInfoToType(session, INVIL_TYPE, infoType, info);
@@ -277,12 +296,19 @@ async function configureChatSessionLogic(socket, chatGlobals) {
                         messageEvent: false,
                         disconnectEvent: false,
                         recordingEvent: false,
+                        populationEvent: false
                     }
                 }
             }
 
             if (addedChatSocketEventListeners[socket.id] != undefined) {
                 console.log(`${socket.id}: socket successfully joined.`);
+            }
+
+            if (addedChatSocketEventListeners[socket.id] == undefined || !addedChatSocketEventListeners[socket.id].populationEvent) {
+                addPopulationSocketListeners(socket, sendConnectedUsersIn);
+                ensureAddedSocketEventListenersExist(socket.id);
+                addedChatSocketEventListeners[socket.id].populationEvent = true;
             }
 
             if (addedChatSocketEventListeners[socket.id] == undefined || !addedChatSocketEventListeners[socket.id].recordingEvent) {
