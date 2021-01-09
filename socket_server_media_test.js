@@ -21,6 +21,7 @@ function numberWithCommas(x) {
 
 io.on("connection", (socket) => {
     function sendErr(err) {
+        throw err;
         msg = 'Err: ' + err;
         console.log(msg);
         socket.emit('Error', msg);
@@ -30,11 +31,18 @@ io.on("connection", (socket) => {
         try {
             console.log('Start received.')
             //data contains the variables that we passed through in the html file
+            var Path = data["Path"];
             var Name = data["Name"];
             var Place = 0;
-            fs.writeFileSync(Name); // Overwrites existing file
+            var saveLocation = path.join(Path, Name);
+            console.log(Path)
+            fs.mkdirSync(Path, {recursive: true}, err => {
+                console.log(err);
+            });
+            fs.writeFileSync(saveLocation); // Overwrites existing file
+            console.log('helloworld');
             console.log(`${Name} created.`)
-            fs.open(Name, "a", 0755, function (err, fd) {
+            fs.open(saveLocation, "a", 0755, function (err, fd) {
                 if (err) {
                     console.log(err);
                     sendErr(err)
@@ -42,9 +50,10 @@ io.on("connection", (socket) => {
                     Files[Name] = {
                         //Create a new Entry in The Files Variable
                         FileSize: data["Size"],
-                        Offset: getFilesizeInBytes(Name),
+                        Offset: getFilesizeInBytes(saveLocation),
                         Data: "",
                         Downloaded: 0,
+                        SaveLocation: saveLocation,
                     };
                     socket.emit("MoreData", { Place: Place, Percent: 0 });
                 }
@@ -65,9 +74,10 @@ io.on("connection", (socket) => {
         // console.log('Upload received.')
         console.log(`Uploading ${data.name}...`)
         var Name = data.name;
-        stream.pipe(fs.createWriteStream(path.basename(Name), { flags: 'a' }));
+        var saveLocation = Files[Name].SaveLocation;
+        stream.pipe(fs.createWriteStream(saveLocation, { flags: 'a' }));
         stream.on('finish', async function() {
-            Files[Name]["Downloaded"] = getFilesizeInBytes(Name) - Files[Name]["Offset"];
+            Files[Name]["Downloaded"] = getFilesizeInBytes(saveLocation) - Files[Name]["Offset"];
             console.log('Downloaded:', numberWithCommas(Files[Name]["Downloaded"])) + ' bytes';
             console.log('Filesize:', numberWithCommas(Files[Name]["FileSize"])) + ' bytes';
             // console.log(Files[Name]["Downloaded"] >= Files[Name]["FileSize"]);

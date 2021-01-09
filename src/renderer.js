@@ -8,7 +8,7 @@ io.sockets.setMaxListeners(0);
 const {initiateExam} = require('../session_logic/exam_manager');
 const {configureSessionLogic, setStudentConnectionStatus} = require('../session_logic/session_socket_logic');
 const {configureChatSessionLogic} = require('../chat/chat_server')
-const {configureChatSessionLogic} = require('../recordings/socket_file_retrieval')
+const {configureFileReceivingSessionLogic} = require('../recordings/socket_file_retrieval')
 
 const {PORT} = require('../globals/connection');
 
@@ -28,7 +28,9 @@ const chatGlobals = {
   addedChatSocketEventListeners: {}
 }
 
-const addedRecordingSocketEventListeners = {}
+const recordingGlobals = {
+  addedRecordingSocketEventListeners: {}
+}
 
 initiateExamBtn.addEventListener("click", runInitiateExamProcess);
 testAliasInput.addEventListener("keydown", (e) => {
@@ -89,5 +91,5 @@ http.listen(PORT, () => {
 io.on('connection', socket => {
   configureSessionLogic(socket);
   configureChatSessionLogic(socket, chatGlobals);
-  configureFileReceivingSessionLogic(addedRecordingSocketEventListeners);
+  configureFileReceivingSessionLogic(socket, recordingGlobals);
 })

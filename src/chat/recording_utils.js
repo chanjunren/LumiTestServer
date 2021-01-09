@@ -1,5 +1,6 @@
 const { STU_TYPE, INVIL_TYPE } = require("../models/db_schemas");
-const { studentIdAndSessionEvent, examStartInstruction, examStopInstruction } = require('../globals/recording_globals');
+const { studentIdAndSessionEvent, examStartInstruction, examStopInstruction, 
+        recordingsStartedResponse, recordingsStoppedResponse } = require('../globals/recording_globals');
 const { getUserType, isValidUserIdAndSessions } = require('../chat/chat_utils');
 const { populateUsersEvent } = require('../globals/chat_globals');
 
@@ -35,6 +36,15 @@ function addRecordingSocketListeners(socket, handleReceivedMessage) {
     socket.on(examStopInstruction, (msg, sendAsAnnouncement, stream) => {
         handleReceivedMessage(msg, sendAsAnnouncement, stream, examStopInstruction);
     });
+
+    // socket.on(recordingsStarted, (msg, sendAsAnnouncement, stream) => {
+    //     handleReceivedMessage(msg, sendAsAnnouncement, stream, '', recordingsStarted);
+    // });
+
+    // socket.on(recordingsStopped, (msg, sendAsAnnouncement, stream) => {
+    //     handleReceivedMessage(msg, sendAsAnnouncement, stream, '', recordingsStopped);
+    // });
+
 }
 
 function addPopulationSocketListeners(socket, sendConnectedUsersIn) {

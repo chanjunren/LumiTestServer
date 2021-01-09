@@ -233,6 +233,7 @@ async function configureChatSessionLogic(socket, chatGlobals) {
             }
 
             function handleReceivedMessage(msg, sendAsAnnouncement, stream='', examStartInstruction='') {
+            // recordingFeedback='') {
                 const sender_userId = msg.userId;
                 const dest_sessions = msg.sessions;
                 const dest_id = msg.destId;
@@ -257,7 +258,10 @@ async function configureChatSessionLogic(socket, chatGlobals) {
                         continue;
                     } else if (examStartInstruction != '' && userType == STU_TYPE) {
                         continue;
-                    }
+                    } 
+                    // else if (recordingFeedback != '' && userType == STU_TYPE && dest_id != allInvilsId) {
+                    //     continue;
+                    // }
 
                     const senderUserName = getUserName(sender_userId);
                     if (userType == INVIL_TYPE) {
