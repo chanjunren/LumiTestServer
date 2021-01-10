@@ -25,6 +25,11 @@ body {
     margin: 5px;
 }
 
+#test-alias-input {
+    min-width: 200px;
+    min-height: 50px;
+}
+
 #content-body {
     display: inline-flex;
     margin: 20px;

@@ -5,6 +5,7 @@ const io = require('socket.io')(http);
 io.setMaxListeners(0);
 io.sockets.setMaxListeners(0);
 
+const {getAllDbs} = require('../globals/db_globals');
 const {initiateExam} = require('../session_logic/exam_manager');
 const {configureSessionLogic, setStudentConnectionStatus} = require('../session_logic/session_socket_logic');
 const {configureChatSessionLogic} = require('../chat/chat_server')
@@ -84,6 +85,12 @@ function outputExam(testAlias) {
   examTables.appendChild(examTable);
 }
 
+function addTestToDropdown(testAlias) {
+  const newOption = document.createElement('option')
+  newOption.innerText = testAlias;
+  testAliasInput.appendChild(newOption);
+}
+
 http.listen(PORT, () => {
   console.log("Listening on ", PORT);
 })
@@ -92,4 +99,14 @@ io.on('connection', socket => {
   configureSessionLogic(socket);
   configureChatSessionLogic(socket, chatGlobals);
   configureFileReceivingSessionLogic(socket, recordingGlobals);
+})
+
+getAllDbs().then(dbs => {
+  for (db of dbs) {
+    if (db.name == "local" || db.name == "admin") {
+      console.log("whut");
+      continue;
+    }
+    addTestToDropdown(db.name);
+  }
 })
