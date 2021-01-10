@@ -17,8 +17,11 @@ const initiateExamBtn = document.getElementById("initiate-btn");
 const testAliasInput = document.getElementById("test-alias-input");
 const examTables = document.getElementById("exam-tables");
 const output = document.getElementById("output-display");
+const ongoingList = document.getElementById("ongoing-list");
 
-const managerMap = new Map(); // Array of ExamManagers
+var ongoingExams = [];
+var managerMap = new Map(); // Array of ExamManagers
+var curr = 0;
 
 const chatGlobals = {
   chatSocketIds: new Set(),
@@ -47,19 +50,56 @@ async function runInitiateExamProcess() {
   output.innerText = "";
   try {
     await initiateExam(testAlias, managerMap);
-
+    ongoingExams.push(`${testAlias}`);
     outputExam(testAlias);
   } catch (e) {
     outputErrorMsg(e);
   }
 }
 
+function showPrev() {
+  console.log("prev clicked");
+  if (curr == 0 || ongoingExams.length == 1) {
+    return;
+  }
+  document.getElementById(`${ongoingExams[curr]}-li`).style.fontWeight = "normal";
+  document.getElementById(`${ongoingExams[curr--]}-exam-table`).style.display = "none";
+
+  document.getElementById(`${ongoingExams[curr]}-li`).style.fontWeight = "bold";
+  document.getElementById(`${ongoingExams[curr]}-exam-table`).style.display = "inline";
+}
+
+function showNext() {
+  console.log("next clicked");
+  if (curr == ongoingExams.length - 1 || ongoingExams.length == 1) {
+    return;
+  }
+  console.log(`${ongoingExams[curr]}-li`);
+  document.getElementById(`${ongoingExams[curr]}-li`).style.fontWeight = "normal";
+  document.getElementById(`${ongoingExams[curr++]}-exam-table`).style.display = "none";
+
+  document.getElementById(`${ongoingExams[curr]}-li`).style.fontWeight = "bold";
+  document.getElementById(`${ongoingExams[curr]}-exam-table`).style.display = "inline";
+}
+
+
 function outputErrorMsg(msg) {
   output.innerText = msg;
 }
 
 function outputExam(testAlias) {
+  // Adding to ongoing list
+  const newLi = document.createElement('li');
+  newLi.id = `${testAlias}-li`;
+  newLi.innerText = testAlias;
+
   const examTable = document.createElement('table');
+  examTable.id = `${testAlias}-exam-table`;
+  examTable.style.display = "none";
+  if (ongoingExams.length == 1) {
+    examTable.style.display = "inline";
+    newLi.style.fontWeight = "bold";
+  }
   examTable.classList.add('exam-table');
   examTable.innerHTML = `<thead>
     <tr>
@@ -82,6 +122,7 @@ function outputExam(testAlias) {
 
   examTable.innerHTML += `</tbody>`
 
+  ongoingList.appendChild(newLi);
   examTables.appendChild(examTable);
 }
 
@@ -91,6 +132,7 @@ function addTestToDropdown(testAlias) {
   testAliasInput.appendChild(newOption);
 }
 
+// ---------- Listeners ----------
 http.listen(PORT, () => {
   console.log("Listening on ", PORT);
 })
@@ -104,7 +146,6 @@ io.on('connection', socket => {
 getAllDbs().then(dbs => {
   for (db of dbs) {
     if (db.name == "local" || db.name == "admin") {
-      console.log("whut");
       continue;
     }
     addTestToDropdown(db.name);
