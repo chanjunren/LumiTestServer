@@ -142,6 +142,7 @@ async function configureChatSessionLogic(socket, chatGlobals) {
                     // console.log('stream:', stream);                  
                     if (stream == '') {
                         var eventToEmit = examStartInstruction == '' ? chatMsgEvent : examStartInstruction;
+                        console.log(`Emitting ${eventToEmit} to ${destinationSocket.id}`)
                         destinationSocket.emit(eventToEmit, senderUserName, msg);
                     } else {
                         var sendStream = ss.createStream();  
@@ -184,6 +185,7 @@ async function configureChatSessionLogic(socket, chatGlobals) {
             //     sessions = getInvilSessions(userId);
             // }
             if (!isValidUserIdAndSessions(socket, userId, sessions)) { 
+                console.log(`${socket.id}: dropped`);
                 return; 
             }
 
@@ -313,12 +315,14 @@ async function configureChatSessionLogic(socket, chatGlobals) {
                 addPopulationSocketListeners(socket, sendConnectedUsersIn);
                 ensureAddedSocketEventListenersExist(socket.id);
                 addedChatSocketEventListeners[socket.id].populationEvent = true;
+                console.log(`${socket.id}: socket population event listener added.`);
             }
 
             if (addedChatSocketEventListeners[socket.id] == undefined || !addedChatSocketEventListeners[socket.id].recordingEvent) {
                 addRecordingSocketListeners(socket, handleReceivedMessage);
                 ensureAddedSocketEventListenersExist(socket.id);
                 addedChatSocketEventListeners[socket.id].recordingEvent = true;
+                console.log(`${socket.id}: socket recording event listener added.`);
             }
 
             if (addedChatSocketEventListeners[socket.id] == undefined || !addedChatSocketEventListeners[socket.id].mediaMessageEvent) {

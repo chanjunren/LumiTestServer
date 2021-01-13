@@ -41,16 +41,17 @@ function getInvalidUserMessage(userId, session) {
 }
 
 function isValidUserIdAndSessions(socket, userId, sessions) {
-    var isValid = true;
+    // var isValid = true;
     for (i in sessions) {
         if (!isValidUser(userId, sessions[i])) {
             socket.emit(chatErrorEvent, getInvalidUserMessage(userId, sessions[i]));
             // console.log(`${socket.id} failed to authenticate.`)
-            isValid = false;
+            return false;
         }
     }
+    return true;
     // console.log(isValid);
-    return isValid;
+    // return isValid;
 }
 
 function userJoin(id, userId, sessions) {

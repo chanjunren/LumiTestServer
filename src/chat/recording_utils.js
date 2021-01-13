@@ -30,10 +30,12 @@ function addRecordingSocketListeners(socket, handleReceivedMessage) {
     })
 
     socket.on(examStartInstruction, (msg, sendAsAnnouncement, stream) => {
+        console.log(`${socket.id}: Start clicked`);
         handleReceivedMessage(msg, sendAsAnnouncement, stream, examStartInstruction);
     });
 
     socket.on(examStopInstruction, (msg, sendAsAnnouncement, stream) => {
+        console.log(`${socket.id}: Stop clicked`);
         handleReceivedMessage(msg, sendAsAnnouncement, stream, examStopInstruction);
     });
 
