@@ -36,6 +36,7 @@ async function configureChatSessionLogic(socket, chatGlobals) {
     var chatRoomsToSocketIdsMap = chatGlobals.chatRoomsToSocketIdsMap;
     var chatSocketIdsToRoomsMap = chatGlobals.chatSocketIdsToRoomsMap;
     var addedChatSocketEventListeners = chatGlobals.addedChatSocketEventListeners;
+    var studentIdToRecordingsStarted = chatGlobals.studentIdToRecordingsStarted;
 
     // console.log(`Configuring session logic for ${socket.id}...`);
     socket.setMaxListeners(0);
@@ -66,9 +67,14 @@ async function configureChatSessionLogic(socket, chatGlobals) {
                 .emit(infoEvent, session, infoType, info);
             }
 
-            function broadcastMsgToType(senderUserName, session, userType, msg, sendAsAnnouncement, stream='', examStartInstruction = '') {
+            function broadcastMsgToType(senderUserName, session, userType, msg, sendAsAnnouncement, stream='', examStartInstruction = '', recordingResponse=null) {
                 // console.log('stream:', stream);
-                if (stream == '') {
+                if (recordingResponse != null) {
+                    console.log('Sending response', recordingResponse.response, recordingResponse.type, senderUserName, msg)
+                    socket.broadcast
+                    .to(session + '_' + userType)
+                    .emit(recordingResponse.response, recordingResponse.type, senderUserName, msg);
+                } else if (stream == '') {
                     var eventToEmit = examStartInstruction == '' ? chatMsgEvent : examStartInstruction;
                     socket.broadcast
                     .to(session + '_' + userType)
@@ -152,11 +158,14 @@ async function configureChatSessionLogic(socket, chatGlobals) {
                 }                
             }
 
-            function sendMessageFromStudent(senderUserName, dest_id, session, msg, stream='') {
+            function sendMessageFromStudent(senderUserName, dest_id, session, msg, stream='', recordingResponse=null) {
                 var dest_session = session;
                 if (dest_session != null) {
                     if (dest_id == allInvilsId) {
-                        broadcastMsgToType(senderUserName, dest_session, INVIL_TYPE, msg, false, stream);
+                        // if (recordingResponse != null) {
+                        //     console.log(`sending response from ${senderUserName}`, recordingResponse); 
+                        // }
+                        broadcastMsgToType(senderUserName, dest_session, INVIL_TYPE, msg, false, stream, '', recordingResponse);
                     } else if (getUserType(dest_session, dest_id) == INVIL_TYPE) {
                         sendToId(senderUserName, dest_id, msg, stream);
                     }
@@ -234,7 +243,8 @@ async function configureChatSessionLogic(socket, chatGlobals) {
                 chatUserIdToSocketsMap[userId] = socket;
             }
 
-            function handleReceivedMessage(msg, sendAsAnnouncement, stream='', examStartInstruction='') {
+            function handleReceivedMessage(msg, sendAsAnnouncement, stream='', examStartInstruction='', 
+                                           recordingResponse=null) {
             // recordingFeedback='') {
                 const sender_userId = msg.userId;
                 const dest_sessions = msg.sessions;
@@ -260,16 +270,21 @@ async function configureChatSessionLogic(socket, chatGlobals) {
                         continue;
                     } else if (examStartInstruction != '' && userType == STU_TYPE) {
                         continue;
-                    } 
-                    // else if (recordingFeedback != '' && userType == STU_TYPE && dest_id != allInvilsId) {
-                    //     continue;
-                    // }
+                    } else if (recordingResponse != null 
+                               && (userType != STU_TYPE 
+                                   || dest_id != allInvilsId
+                                   || stream != '' 
+                                   || examStartInstruction != '' 
+                                   || sendAsAnnouncement)) {
+                        console.log('continuing', userType, dest_id, stream, examStartInstruction, sendAsAnnouncement);
+                        continue;
+                    }
 
                     const senderUserName = getUserName(sender_userId);
                     if (userType == INVIL_TYPE) {
                         sendMessageFromInvigilator(senderUserName, dest_id, session, msg, sendAsAnnouncement, stream, examStartInstruction);
                     } else {
-                        sendMessageFromStudent(senderUserName, dest_id, session, msg, stream);
+                        sendMessageFromStudent(senderUserName, dest_id, session, msg, stream, recordingResponse);
                     }
                 }
                     // io.to(user.session).emit(chatMsgEvent, msg);   

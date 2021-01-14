@@ -25,7 +25,8 @@ const chatGlobals = {
   chatUserIdToSocketsMap: {},
   chatRoomsToSocketIdsMap: {},
   chatSocketIdsToRoomsMap: {},
-  addedChatSocketEventListeners: {}
+  addedChatSocketEventListeners: {},
+  studentIdToRecordingsStarted: {}
 }
 
 const recordingGlobals = {

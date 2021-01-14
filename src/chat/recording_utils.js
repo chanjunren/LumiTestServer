@@ -39,14 +39,23 @@ function addRecordingSocketListeners(socket, handleReceivedMessage) {
         handleReceivedMessage(msg, sendAsAnnouncement, stream, examStopInstruction);
     });
 
-    // socket.on(recordingsStarted, (msg, sendAsAnnouncement, stream) => {
-    //     handleReceivedMessage(msg, sendAsAnnouncement, stream, '', recordingsStarted);
-    // });
+    socket.on(recordingsStartedResponse, (msg, sendAsAnnouncement, stream, recordingType) => {
+        var recordingResponse = {
+            response: recordingsStartedResponse,
+            type: recordingType,
+        }
+        handleReceivedMessage(msg, sendAsAnnouncement, stream, '', recordingResponse);;
+        console.log(`${socket.id}: response received`, recordingResponse)
+    });
 
-    // socket.on(recordingsStopped, (msg, sendAsAnnouncement, stream) => {
-    //     handleReceivedMessage(msg, sendAsAnnouncement, stream, '', recordingsStopped);
-    // });
-
+    socket.on(recordingsStoppedResponse, (msg, sendAsAnnouncement, stream, recordingType) => {
+        var recordingResponse = {
+            response: recordingsStoppedResponse,
+            type: recordingType,
+        }
+        handleReceivedMessage(msg, sendAsAnnouncement, stream, '', recordingResponse);
+        console.log(`${socket.id}: response received`, recordingResponse)
+    });
 }
 
 function addPopulationSocketListeners(socket, sendConnectedUsersIn) {
