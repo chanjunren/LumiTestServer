@@ -4,3 +4,4 @@ src/utils
 src/db/dbOutput/*
 test_media.avi
 src/archive
+output

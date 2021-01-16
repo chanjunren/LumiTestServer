@@ -1,6 +1,6 @@
 const { STU_TYPE, INVIL_TYPE } = require("../models/db_schemas");
 const { studentIdAndSessionEvent, examStartInstruction, examStopInstruction, 
-        recordingsStartedResponse, recordingsStoppedResponse } = require('../globals/recording_globals');
+        recordingsStartedResponse, recordingsStoppedResponse, sentPercent } = require('../globals/recording_globals');
 const { getUserType, isValidUserIdAndSessions } = require('../chat/chat_utils');
 const { populateUsersEvent } = require('../globals/chat_globals');
 
@@ -55,6 +55,16 @@ function addRecordingSocketListeners(socket, handleReceivedMessage) {
         }
         handleReceivedMessage(msg, sendAsAnnouncement, stream, '', recordingResponse);
         console.log(`${socket.id}: response received`, recordingResponse)
+    });
+
+    console.log('adding sentpercent', sentPercent);
+    socket.on(sentPercent, (msg, recordingType, percent) => {
+        console.log('sentpercent received', msg, recordingType, percent);
+        var recordingPercent = {
+            percent: percent,
+            type: recordingType,
+        }
+        handleReceivedMessage(msg, false, '', '', null, recordingPercent); 
     });
 }
 

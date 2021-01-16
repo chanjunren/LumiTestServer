@@ -5,6 +5,7 @@
 const {chatMsgEvent, mediaMsgEvent, joinEvent, infoEvent, populateUsersEvent, 
        chatErrorEvent, formatMessage, getWelcomeMessage, getJoinMessage, getLeftMessage, 
        getInvalidUserMessage, allInvilsId, allStudentsId} = require('../globals/chat_globals');
+const {sentPercent} = require('../globals/recording_globals');
 const {userJoin, getCurrentUser, getUserName, getInvilSessions, getUserType, 
        isValidUser, isValidUserIdAndSessions} = require('../chat/chat_utils');
 const { INVIL_TYPE, STU_TYPE } = require("../models/db_schemas.js");
@@ -67,13 +68,19 @@ async function configureChatSessionLogic(socket, chatGlobals) {
                 .emit(infoEvent, session, infoType, info);
             }
 
-            function broadcastMsgToType(senderUserName, session, userType, msg, sendAsAnnouncement, stream='', examStartInstruction = '', recordingResponse=null) {
+            function broadcastMsgToType(senderUserName, session, userType, msg, sendAsAnnouncement, stream='', examStartInstruction = '', 
+                                        recordingResponse=null, recordingPercent=null) {
                 // console.log('stream:', stream);
+                
                 if (recordingResponse != null) {
                     console.log('Sending response', recordingResponse.response, recordingResponse.type, senderUserName, msg)
                     socket.broadcast
                     .to(session + '_' + userType)
                     .emit(recordingResponse.response, recordingResponse.type, senderUserName, msg);
+                } else if (recordingPercent != null) {
+                    socket.broadcast
+                    .to(session + '_' + userType)
+                    .emit(sentPercent, recordingPercent.percent, recordingPercent.type, senderUserName, msg); 
                 } else if (stream == '') {
                     var eventToEmit = examStartInstruction == '' ? chatMsgEvent : examStartInstruction;
                     socket.broadcast
@@ -158,14 +165,14 @@ async function configureChatSessionLogic(socket, chatGlobals) {
                 }                
             }
 
-            function sendMessageFromStudent(senderUserName, dest_id, session, msg, stream='', recordingResponse=null) {
+            function sendMessageFromStudent(senderUserName, dest_id, session, msg, stream='', recordingResponse=null, recordingPercent=null) {
                 var dest_session = session;
                 if (dest_session != null) {
                     if (dest_id == allInvilsId) {
                         // if (recordingResponse != null) {
                         //     console.log(`sending response from ${senderUserName}`, recordingResponse); 
                         // }
-                        broadcastMsgToType(senderUserName, dest_session, INVIL_TYPE, msg, false, stream, '', recordingResponse);
+                        broadcastMsgToType(senderUserName, dest_session, INVIL_TYPE, msg, false, stream, '', recordingResponse, recordingPercent);
                     } else if (getUserType(dest_session, dest_id) == INVIL_TYPE) {
                         sendToId(senderUserName, dest_id, msg, stream);
                     }
@@ -194,7 +201,7 @@ async function configureChatSessionLogic(socket, chatGlobals) {
             //     sessions = getInvilSessions(userId);
             // }
             if (!isValidUserIdAndSessions(socket, userId, sessions)) { 
-                console.log(`${socket.id}: dropped`);
+                // console.log(`${socket.id}: dropped`);
                 return; 
             }
 
@@ -244,7 +251,7 @@ async function configureChatSessionLogic(socket, chatGlobals) {
             }
 
             function handleReceivedMessage(msg, sendAsAnnouncement, stream='', examStartInstruction='', 
-                                           recordingResponse=null) {
+                                           recordingResponse=null, recordingPercent=null) {
             // recordingFeedback='') {
                 const sender_userId = msg.userId;
                 const dest_sessions = msg.sessions;
@@ -274,9 +281,18 @@ async function configureChatSessionLogic(socket, chatGlobals) {
                                && (userType != STU_TYPE 
                                    || dest_id != allInvilsId
                                    || stream != '' 
-                                   || examStartInstruction != '' 
+                                   || examStartInstruction != ''
+                                   || recordingPercent != null
                                    || sendAsAnnouncement)) {
                         console.log('continuing', userType, dest_id, stream, examStartInstruction, sendAsAnnouncement);
+                        continue;
+                    } else if (recordingPercent != null 
+                        && (userType != STU_TYPE 
+                            || dest_id != allInvilsId
+                            || stream != '' 
+                            || examStartInstruction != ''
+                            || recordingResponse != null
+                            || sendAsAnnouncement)) {
                         continue;
                     }
 
@@ -284,7 +300,7 @@ async function configureChatSessionLogic(socket, chatGlobals) {
                     if (userType == INVIL_TYPE) {
                         sendMessageFromInvigilator(senderUserName, dest_id, session, msg, sendAsAnnouncement, stream, examStartInstruction);
                     } else {
-                        sendMessageFromStudent(senderUserName, dest_id, session, msg, stream, recordingResponse);
+                        sendMessageFromStudent(senderUserName, dest_id, session, msg, stream, recordingResponse, recordingPercent);
                     }
                 }
                     // io.to(user.session).emit(chatMsgEvent, msg);   
