@@ -6,6 +6,9 @@ const {startFileSendEvent, uploadFileChunkEvent, finishFileUploadEvent,
 var ss = require('socket.io-stream');
 var path = require('path');
 
+const ReadableStreamClone = require("readable-stream-clone");
+var CombinedStream = require('combined-stream');
+
 var Files = {};
 
 function sleep(ms) {
@@ -71,6 +74,7 @@ async function configureFileReceivingSessionLogic(socket, recordingGlobals) {
                             Data: "",
                             Downloaded: 0,
                             SaveLocation: saveLocation,
+                            AudioStreams: []
                         };
                         // console.log(`${socket.id}: Emitting more data...${moreFileDataEvent}`)
                         socket.emit(moreFileDataEvent, { 
@@ -98,6 +102,10 @@ async function configureFileReceivingSessionLogic(socket, recordingGlobals) {
                 // console.log(`Uploading ${data.name}...`)
                 var Name = data.name;
                 var saveLocation = Files[Name].SaveLocation;
+                if (data.recordingType == 'aud') {
+                    var streamclone = new ReadableStreamClone(stream);
+                    Files[Name].AudioStreams.push(streamclone);
+                }
                 stream.pipe(fs.createWriteStream(saveLocation, { flags: 'a' }));
                 stream.on('finish', async function() {
                     const prevDownloaded = Files[Name]["Downloaded"];
@@ -118,8 +126,27 @@ async function configureFileReceivingSessionLogic(socket, recordingGlobals) {
                             Received: Files[Name]["Downloaded"] - prevDownloaded, 
                         });
                     } else {
+                        if (data.recordingType != 'aud') {
+                            socket.emit(finishFileUploadEvent, Name, Files[Name]["Downloaded"] - prevDownloaded);
+                            return;
+                        }
                         // console.log(Name, 'Done');
-                        socket.emit(finishFileUploadEvent, Name, Files[Name]["Downloaded"] - prevDownloaded);
+                        var combinedStream = CombinedStream.create();
+
+                        for (i = 0; i < Files[Name].AudioStreams.length; i++) {
+                            stream = Files[Name].AudioStreams[i];
+                            combinedStream.append(stream);
+                            // combinedStream.append(function(next) {
+                            //     // console.log('next' + i);
+                            //     next(stream);
+                            // });
+                        }
+            
+                        combinedStream.pipe(fs.createWriteStream(saveLocation));
+                        // console.log('test');
+                        combinedStream.on('end', async function() {
+                            socket.emit(finishFileUploadEvent, Name, Files[Name]["Downloaded"] - prevDownloaded);
+                        });
                     }
                 });
             } catch (err) {
