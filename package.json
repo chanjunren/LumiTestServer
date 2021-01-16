@@ -18,7 +18,7 @@
   },
   "homepage": "https://github.com/chanjunren/LumiTestServer#readme",
   "devDependencies": {
-    "electron": "^11.1.1"
+    "electron": "^11.2.0"
   },
   "dependencies": {
     "combined-stream": "^1.0.8",
@@ -28,7 +28,7 @@
     "mongodb": "^3.6.3",
     "mongoose": "^5.11.9",
     "readable-stream-clone": "0.0.7",
-    "socket.io": "^3.0.4",
+    "socket.io": "^3.1.0",
     "socket.io-stream": "^0.9.1"
   }
 }
